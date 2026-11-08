@@ -1,0 +1,3 @@
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;cursor:none}video,canvas{width:100%;height:100%;object-fit:contain;display:block}[hidden]{display:none!important}
+
+.output-controls{position:fixed;top:12px;right:12px;display:flex;gap:7px;opacity:0;pointer-events:none;transition:opacity .15s}.controls-visible{cursor:default}.controls-visible .output-controls{opacity:1;pointer-events:auto}.output-controls button{border:1px solid #ffffff50;border-radius:5px;background:#141a24e8;color:#fff;padding:9px 13px;font:12px -apple-system,'Segoe UI',sans-serif;cursor:pointer}

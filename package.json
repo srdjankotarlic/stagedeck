@@ -1,0 +1,105 @@
+{
+  "name": "stage-deck",
+  "productName": "StageDeck",
+  "version": "0.5.1",
+  "description": "PowerPoint presentation desk for Stream Deck XL",
+  "main": "src/main.cjs",
+  "author": "StageDeck",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.cjs",
+    "assets": "node scripts/assets.cjs",
+    "plugin": "node scripts/package-plugin.cjs",
+    "build:mac": "npm run assets && npm run native && npm run plugin && electron-builder --mac dmg zip --universal",
+    "build:win": "npm run assets && npm run plugin && electron-builder --win nsis --x64 --config.win.signAndEditExecutable=false",
+    "native": "node scripts/build-native.cjs",
+    "test:ui": "node scripts/smoke-ui.cjs",
+    "test:office": "node scripts/check-media-and-recovery.cjs"
+  },
+  "build": {
+    "appId": "com.stagedeck.app",
+    "productName": "StageDeck",
+    "asar": true,
+    "asarUnpack": [
+      "src/native/**/*",
+      "assets/icon.ico"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "ui/**/*",
+      "assets/**/*",
+      "package.json",
+      "!node_modules/@napi-rs/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "plugin",
+        "to": "plugin"
+      },
+      {
+        "from": "dist",
+        "to": "installers"
+      },
+      {
+        "from": "INSTALL-SR.md",
+        "to": "Uputstvo.txt"
+      },
+      {
+        "from": "scripts/verify-desktop.cjs",
+        "to": "validation/verify-desktop.cjs"
+      },
+      {
+        "from": "validation",
+        "to": "validation"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "assets/icon.png",
+      "identity": "-",
+      "extendInfo": {
+        "NSAppleEventsUsageDescription": "StageDeck controls PowerPoint to start and stop your presentations and show their live status."
+      },
+      "minimumSystemVersion": "13.0",
+      "artifactName": "StageDeck-${version}-mac-universal.${ext}",
+      "entitlements": "build/entitlements.mac.plist"
+    },
+    "win": {
+      "icon": "assets/icon.png",
+      "target": "nsis",
+      "artifactName": "StageDeck-${version}-Windows-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "StageDeck",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico"
+    },
+    "afterPack": "scripts/after-pack.cjs",
+    "afterSign": "scripts/sign-mac.cjs"
+  },
+  "dependencies": {
+    "adm-zip": "^0.6.1",
+    "pdfjs-dist": "^6.5.438",
+    "ws": "^8.22.1"
+  },
+  "devDependencies": {
+    "@elgato/cli": "^1.10.4",
+    "@fontsource/inter": "^5.3.0",
+    "@playwright/test": "^1.65.0",
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0",
+    "lucide-static": "^1.70.0",
+    "pdf-lib": "^1.17.1",
+    "pptxgenjs": "^4.0.1",
+    "resedit": "^3.1.0",
+    "sharp": "^0.35.5"
+  }
+}

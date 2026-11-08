@@ -1,0 +1,9 @@
+node_modules/
+release/
+dist/
+.test-output/
+*.log
+src/native/display-helper
+src/native/window-capture
+src/native/*.scpt
+.DS_Store

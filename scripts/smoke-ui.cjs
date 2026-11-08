@@ -1,0 +1,96 @@
+const { _electron:electron,expect }=require('@playwright/test');const assert=require('node:assert/strict');const path=require('node:path');const fs=require('node:fs');
+(async()=>{
+ const root=path.join(__dirname,'..'),data=path.join(root,'.test-output/ui-data');fs.rmSync(data,{recursive:true,force:true});
+ const app=await electron.launch({args:[root],env:{...process.env,STAGEDECK_TEST_DATA:data,STAGEDECK_TEST_PORT:'49362'}});
+ try{
+  const page=await app.firstWindow();const issues=[];page.on('pageerror',e=>issues.push(e.message));page.on('console',m=>{if(m.type()==='error')console.log('renderer:',m.text());});
+  const displayIds=(await page.evaluate(()=>window.stage.getState())).displays.map(d=>d.id),roles=Object.fromEntries(displayIds.map((id,i)=>[id,displayIds.length===1?'slides':i===0?'notes':i===1?'slides':'none']));
+  const waitState=predicate=>expect.poll(async()=>!!predicate(await page.evaluate(()=>window.stage.getState())),{timeout:20000}).toBe(true);
+  await page.waitForSelector('.slot');if(await page.locator('#close-setup').isVisible())await page.locator('#close-setup').click();assert.equal(await page.locator('.slot').count(),32);
+  const files=['01 Otvaranje.pptx','02 Gost predavač.pptx','03 Proizvod.pptx','04 Program događaja.pdf'].map(f=>path.join(root,'.test-output/fixtures',f));
+  const imported=await page.evaluate(paths=>window.stage.command('import',{paths}),files);assert.equal(imported.count,4);
+  await page.waitForFunction(()=>document.querySelectorAll('.slot:not(.empty)').length===4);
+  await page.waitForFunction(()=>document.querySelectorAll('.slot-preview img').length>=4,{timeout:20000});
+  await page.screenshot({path:path.join(root,'.test-output/stagedeck-grid.png')});
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).colorScheme),'light');
+  await page.locator('[data-index="0"] .slot-name').click();
+  await page.locator('.slot-name-editor').fill('Otvaranje · glavni govornik');
+  await page.locator('.slot-name-editor').press('Enter');
+  await waitState(s=>s.current.slots[0].name==='Otvaranje · glavni govornik');
+  assert.equal((await page.evaluate(()=>window.stage.getState())).live,null,'editing a name must never start a presentation');
+  await page.locator('[data-index="0"] .slot-name').click();
+  await page.locator('.slot-name-editor').fill('Ne sačuvaj');await page.locator('.slot-name-editor').press('Escape');
+  assert.equal((await page.evaluate(()=>window.stage.getState())).current.slots[0].name,'Otvaranje · glavni govornik');
+  await page.locator('[data-index="0"]').click({button:'right'});await page.locator('[data-action="reset-slot-name"]').click();
+  await waitState(s=>s.current.slots[0].name==='01 Otvaranje');
+  await page.locator('[data-index="0"] .key-label-button').click();
+  await page.locator('#key-label').fill('N23');await page.locator('#key-size').selectOption('64');await page.locator('#key-layout').selectOption('title');
+  await page.waitForFunction(()=>document.getElementById('key-preview').src.startsWith('data:image/png'));
+  await page.locator('#key-preview').screenshot({path:path.join(root,'.test-output/key-N23.png')});
+  await page.locator('#key-form button[type="submit"]').click();
+  await waitState(s=>s.current.slots[0].keyLabel==='N23'&&s.current.slots[0].keyFontSize===64&&s.current.slots[0].keyLayout==='title');
+  assert.equal((await page.evaluate(()=>window.stage.getState())).current.slots[0].name,'01 Otvaranje','key alias must not overwrite the presentation name');
+  await page.locator('#screens').click();assert.equal(await page.locator('[data-monitor]').count(),displayIds.length);
+  for(const [id,role] of Object.entries(roles))await page.locator(`[data-monitor="${id}"]`).selectOption(role);
+  await page.reload();await page.waitForSelector('.slot');
+  assert.deepEqual((await page.evaluate(()=>window.stage.getState())).routing.roles,roles);
+  assert.equal((await page.evaluate(()=>window.stage.getState())).current.slots[0].keyLabel,'N23');
+  await page.locator('#screens').click();await page.locator('#identify-displays').click();
+  await expect.poll(async()=>(await app.windows()).filter(w=>w.url().includes('identify.html')).length).toBe(displayIds.length);const identified=(await app.windows()).filter(w=>w.url().includes('identify.html'));assert.equal(identified.length,displayIds.length);
+  assert.deepEqual((await Promise.all(identified.map(w=>w.locator('#number').textContent()))).sort(),displayIds.map((_,i)=>String(i+1)));
+  await page.locator('#auto-displays').click();await page.locator('#close-screens').click();
+  await page.locator('[data-theme="dark"]').click();await page.waitForFunction(()=>document.documentElement.dataset.theme==='dark');
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).colorScheme),'dark');
+  await page.screenshot({path:path.join(root,'.test-output/stagedeck-dark.png')});
+  await page.reload();await page.waitForSelector('.slot');
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).colorScheme),'dark');
+  await page.locator('[data-theme="light"]').click();await page.waitForFunction(()=>document.documentElement.dataset.theme==='light');
+  assert.equal((await page.evaluate(()=>window.stage.getState())).current.slots[3].slides,3);
+  await page.evaluate(()=>window.stage.command('move',{from:0,to:7}));
+  assert.equal((await page.evaluate(()=>window.stage.getState())).current.slots[7].name,'01 Otvaranje');
+  await page.locator('#lock').click();
+  const locked=await page.evaluate(paths=>window.stage.command('import',{paths}),[files[0]]);assert.equal(locked.ok,false);
+  await page.locator('#lock').click();await page.evaluate(()=>window.stage.command('dismiss-error'));
+  await page.evaluate(roles=>window.stage.command('display-roles',{roles}),roles);
+  await page.locator('[data-index="3"] .slot-trigger').click();
+  assert.equal((await page.evaluate(()=>window.stage.getState())).live,null,'selecting a card must never launch');
+  await expect(page.locator('#cue-name')).toHaveText('04 Program događaja');
+  await page.locator('[data-index="3"] .slot-trigger').dblclick();
+  assert.equal((await page.evaluate(()=>window.stage.getState())).live,null,'double click must only select');
+  await page.locator('#go').click();await waitState(s=>s.live?.kind==='pdf'&&!s.busy);
+  assert.equal((await app.windows()).filter(w=>w.url().includes('/pdf.html')).length,1,'PDF uses the assigned Slides output without requiring Notes reassignment');
+  const pdf=(await app.windows()).find(w=>w.url().includes('/pdf.html'));await pdf.waitForFunction(()=>document.querySelector('canvas').width>300);
+  assert.equal(await page.locator('#go').isDisabled(),true,'GO cannot stop an active deck');
+  const active=await page.evaluate(()=>window.stage.getState());await page.evaluate(s=>window.stage.command('play',{id:s.live.id,eventId:s.current.id}),active);assert.equal((await page.evaluate(()=>window.stage.getState())).live.id,active.live.id);
+  await page.locator('[data-index="1"] .slot-trigger').click();
+  assert.equal((await page.evaluate(()=>window.stage.getState())).live.kind,'pdf','selecting another deck cannot switch live output');
+  await page.locator('#clear-cue').click();assert.equal(await page.locator('#cue-panel').isVisible(),false);
+  await page.locator('#next').click();await waitState(s=>s.live?.slide===2);
+  await page.locator('#stop').click();await waitState(s=>!s.live&&!s.busy);
+  // Exercise the real local Stream Deck transport independently of mouse GO.
+  const {WebSocket}=require('ws'),bridge=JSON.parse(fs.readFileSync(path.join(data,'bridge.json')));
+  const socket=new WebSocket(`ws://127.0.0.1:${bridge.port}/deck?token=${bridge.token}`),frames=[];
+  socket.on('message',raw=>frames.push(JSON.parse(raw)));await new Promise((r,j)=>{socket.on('open',r);socket.on('error',j);});
+  try{
+   socket.send(JSON.stringify({type:'hello',devices:[{id:'test-xl',type:2,name:'Stream Deck XL'}]}));await waitState(s=>s.bridge.connected);
+   await page.locator('[data-index="3"] .slot-trigger').click();assert.equal((await page.evaluate(()=>window.stage.getState())).live,null,'hardware presence must not bypass mouse GO');
+   socket.send(JSON.stringify({type:'command',id:'one-press',command:'toggle',payload:{index:3}}));await waitState(s=>!!s.live&&!s.busy);
+   await expect.poll(()=>frames.some(m=>m.type==='result'&&m.id==='one-press'&&m.ok)).toBe(true);
+   await expect.poll(()=>frames.some(m=>m.type==='keys'&&m.images?.length===32)).toBe(true);
+   socket.send(JSON.stringify({type:'command',id:'second-press',command:'toggle',payload:{index:3}}));await waitState(s=>!s.live&&!s.busy);
+   await expect.poll(()=>frames.some(m=>m.type==='result'&&m.id==='second-press'&&m.ok)).toBe(true);
+  }finally{socket.close();}
+  await waitState(s=>!s.bridge.connected);
+  const current=await page.evaluate(()=>window.stage.getState());
+  const stale=await page.evaluate(id=>window.stage.command('play',{id,eventId:'wrong-event'}),current.current.slots[3].id);assert.equal(stale.ok,false);assert.equal((await page.evaluate(()=>window.stage.getState())).live,null);
+  await page.evaluate(()=>window.stage.command('dismiss-error'));
+  await page.locator('[data-index="7"] .slot-trigger').click();await page.evaluate(()=>window.stage.command('move',{from:7,to:6}));
+  await expect(page.locator('[data-index="6"]')).toHaveClass(/selected/);
+  await page.evaluate(()=>window.stage.command('remove',{index:6}));await expect(page.locator('#cue-panel')).toBeHidden();
+  // Actual canvas measurements: text-only N23 is larger than the thumbnail layout.
+  const typography=await page.evaluate(async()=>{const {keyTextLayout}=await import('./keys.js');await document.fonts.ready;const c=document.createElement('canvas').getContext('2d');const slot={name:'Puni naziv prezentacije',keyLabel:'N23',keyFontSize:64,keyLayout:'title'};const title=keyTextLayout(c,slot);const preview=keyTextLayout(c,{...slot,keyLayout:'preview'});const multiline=keyTextLayout(c,{...slot,keyLabel:'GOVORNIK\n23'});return {title,preview,multiline};});
+  assert.ok(typography.title.font>=50);assert.ok(typography.title.font>typography.preview.font);assert.equal(typography.title.clipped,false);assert.equal(typography.multiline.clipped,false);assert.ok(typography.multiline.lines.length>=2);
+  for(const size of [{width:1060,height:760},{width:1430,height:940}]){await page.setViewportSize(size);await page.locator('[data-index="1"] .slot-trigger').click();await page.screenshot({path:path.join(root,`.test-output/stagedeck-go-${size.width}.png`)});const b=await page.locator('#go').boundingBox();assert.ok(b&&b.y+b.height<=size.height,'GO must remain visible at minimum window size');}
+  assert.deepEqual(issues,[]);console.log('UI PASS: per-monitor roles and N23 alias persist; connected-screen identification overlays; alias preserves source name; card selection and double-click never launch; GO launches; selection preserves live output; stale GO rejected; selected ID follows reorder and clears on removal; text-only N23 >=50px; real authenticated Stream Deck transport remains one-press toggle; mouse GO remains guarded with hardware connected; no Stream Deck required; light/dark themes persist; inline rename never launches playback; Escape cancels; reset restores filename; 32 keys; PPT/PDF import and thumbnails; reorder; lock; actual PDF fullscreen, navigation and toggle close.');
+ }finally{await app.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

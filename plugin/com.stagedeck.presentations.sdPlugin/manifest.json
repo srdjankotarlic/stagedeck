@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "UUID": "com.stagedeck.presentations",
+  "Name": "StageDeck",
+  "Version": "0.5.1.0",
+  "Author": "StageDeck",
+  "Description": "Your PowerPoint and PDF presentations, one key away.",
+  "Category": "StageDeck",
+  "CategoryIcon": "images/category",
+  "Icon": "images/plugin",
+  "CodePath": "plugin.cjs",
+  "SDKVersion": 2,
+  "Software": {
+    "MinimumVersion": "6.6"
+  },
+  "Nodejs": {
+    "Version": "20"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "12"
+    },
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Profiles": [
+    {
+      "Name": "profiles/StageDeck XL",
+      "DeviceType": 2,
+      "AutoInstall": false,
+      "Readonly": false,
+      "DontAutoSwitchWhenInstalled": true
+    }
+  ],
+  "Actions": [
+    {
+      "UUID": "com.stagedeck.presentations.slot",
+      "Name": "Presentation",
+      "Tooltip": "Start or stop the presentation at this position in StageDeck.",
+      "Icon": "images/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "SupportedInMultiActions": false,
+      "PropertyInspectorPath": "inspector.html",
+      "States": [
+        {
+          "Image": "images/key",
+          "TitleAlignment": "bottom",
+          "FontSize": 10
+        }
+      ]
+    }
+  ]
+}

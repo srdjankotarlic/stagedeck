@@ -1,0 +1,34 @@
+name: Windows verification
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run assets
+      - run: npm run plugin
+      - run: npm test
+      - name: Windows PowerShell and Win32 bridge
+        shell: powershell
+        run: ./scripts/validate-windows.ps1
+      - name: PDF playback, themes, labels and Stream Deck protocol on Windows
+        run: |
+          node scripts/create-fixtures.cjs
+          npm run test:ui
+      - run: npm run build:win
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: StageDeck-Windows-tested-build
+          path: release/StageDeck-*-Windows-Setup.exe
+          if-no-files-found: error
