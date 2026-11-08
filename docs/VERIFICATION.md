@@ -16,7 +16,9 @@ Three sequential runs per scenario on the same Mac with three connected monitors
 
 Independent output renderers now load concurrently. PDF file reads are asynchronous, keeping the main process responsive, with no stale document cache. On Windows, the PowerShell transport is prepared while the desk opens, without starting PowerPoint or opening a presentation. The first GO can reuse this transport.
 
-## Windows boundary
+## Windows verification and boundary
+
+[Successful Windows build and installed-application test, 8 November 2026](https://github.com/srdjankotarlic/stagedeck/actions/runs/42515816805): all 16 unit tests passed, PowerShell/Win32 checks passed, UI/PDF/Stream Deck checks passed both from source and from the installed NSIS package. The released Windows installer is the artifact from this run.
 
 GitHub Actions runs the unit suite, actual Windows PowerShell parser, Win32 C# compilation/DPI initialization, worker warmup/restart, Electron PDF/UI/Stream Deck protocol checks, and installer build on a Windows runner. The status of the workflow is the source of truth for those automated checks. GitHub hosted runners do not supply desktop PowerPoint. Native Office Presenter View, slideshow capture, embedded media and physical monitor routing still require the packaged `Proveri Windows.cmd` and hands-on checks on a Windows 10/11 x64 computer with Microsoft 365 / PowerPoint 2021+.
 
