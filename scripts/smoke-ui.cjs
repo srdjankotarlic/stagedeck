@@ -1,7 +1,7 @@
 const { _electron:electron,expect }=require('@playwright/test');const assert=require('node:assert/strict');const path=require('node:path');const fs=require('node:fs');
 (async()=>{
  const root=path.join(__dirname,'..'),data=path.join(root,'.test-output/ui-data');fs.rmSync(data,{recursive:true,force:true});
- const app=await electron.launch({args:[root],env:{...process.env,STAGEDECK_TEST_DATA:data,STAGEDECK_TEST_PORT:'49362'}});
+ const app=await electron.launch({...(process.env.STAGEDECK_TEST_EXE?{executablePath:process.env.STAGEDECK_TEST_EXE}:{args:[root]}),env:{...process.env,STAGEDECK_TEST_DATA:data,STAGEDECK_TEST_PORT:'49362'}});
  try{
   const page=await app.firstWindow();const issues=[];page.on('pageerror',e=>issues.push(e.message));page.on('console',m=>{if(m.type()==='error')console.log('renderer:',m.text());});
   const displayIds=(await page.evaluate(()=>window.stage.getState())).displays.map(d=>d.id),roles=Object.fromEntries(displayIds.map((id,i)=>[id,displayIds.length===1?'slides':i===0?'notes':i===1?'slides':'none']));

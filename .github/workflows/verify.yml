@@ -27,8 +27,22 @@ jobs:
           node scripts/create-fixtures.cjs
           npm run test:ui
       - run: npm run build:win
+      - name: Install the Windows package and verify the installed application
+        shell: powershell
+        run: |
+          $installer = (Get-ChildItem release/StageDeck-*-Windows-Setup.exe).FullName
+          $process = Start-Process -FilePath $installer -ArgumentList '/S', '/D=C:\StageDeck-Test' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installer failed: $($process.ExitCode)" }
+          foreach ($file in @('StageDeck.exe', 'resources\installers\com.stagedeck.presentations.streamDeckPlugin', 'resources\installers\StageDeck XL.streamDeckProfile', 'resources\validation\Proveri Windows.cmd')) {
+            if (-not (Test-Path (Join-Path 'C:\StageDeck-Test' $file))) { throw "Missing installed file: $file" }
+          }
+          $env:STAGEDECK_TEST_EXE = 'C:\StageDeck-Test\StageDeck.exe'
+          npm run test:ui
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: StageDeck-Windows-tested-build
-          path: release/StageDeck-*-Windows-Setup.exe
+          path: |
+            release/StageDeck-*-Windows-Setup.exe
+            release/win-unpacked/resources/installers/*
           if-no-files-found: error

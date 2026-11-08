@@ -11,8 +11,8 @@
     "test": "node --test test/*.test.cjs",
     "assets": "node scripts/assets.cjs",
     "plugin": "node scripts/package-plugin.cjs",
-    "build:mac": "npm run assets && npm run native && npm run plugin && electron-builder --mac dmg zip --universal",
-    "build:win": "npm run assets && npm run plugin && electron-builder --win nsis --x64 --config.win.signAndEditExecutable=false",
+    "build:mac": "npm run assets && npm run native && npm run plugin && electron-builder --mac dmg zip --universal --publish never",
+    "build:win": "npm run assets && npm run plugin && electron-builder --win nsis --x64 --config.win.signAndEditExecutable=false --publish never",
     "native": "node scripts/build-native.cjs",
     "test:ui": "node scripts/smoke-ui.cjs",
     "test:office": "node scripts/check-media-and-recovery.cjs"
