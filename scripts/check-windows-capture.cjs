@@ -18,6 +18,7 @@ const assert = require('node:assert/strict');
   const app = await electron.launch({ args: [bootstrap] });
   try {
     await app.firstWindow();
+    await expect.poll(() => app.evaluate(() => Boolean(globalThis.mirrors))).toBe(true);
     const snapshot = await app.evaluate(async ({ screen }) => {
       const display = screen.getPrimaryDisplay();
       const handle = source.getNativeWindowHandle().readBigUInt64LE().toString();
