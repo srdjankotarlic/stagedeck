@@ -50,8 +50,12 @@ internal static class StageDeckPlugin {
         await Deck.ConnectAsync(new Uri("ws://127.0.0.1:" + options["-port"]), Lifetime.Token);
         await Send(Deck, DeckSend, new { @event = options["-registerEvent"], uuid = options["-pluginUUID"] });
         Task connection = ConnectBridge();
+        Exception failure = null;
         try { await Receive(Deck, OnDeck); }
-        finally { Lifetime.Cancel(); if (Bridge != null) Bridge.Abort(); Deck.Abort(); try { await connection; } catch { } }
+        catch (Exception error) { failure = error; }
+        finally { Lifetime.Cancel(); if (Bridge != null) Bridge.Abort(); Deck.Abort(); }
+        try { await connection; } catch { }
+        if (failure != null) throw failure;
     }
     private static async Task Send(ClientWebSocket socket, SemaphoreSlim gate, object value) {
         await gate.WaitAsync(Lifetime.Token);
@@ -140,10 +144,12 @@ internal static class StageDeckPlugin {
         if (type == "willDisappear") { Key old; Keys.TryRemove(context, out old); }
         if (type == "keyDown") {
             Key key; if (!Keys.TryGetValue(context, out key)) return;
+            bool failed = false;
             try {
                 if (Bridge != null && Bridge.State == WebSocketState.Open) await Send(Bridge, BridgeSend, new { type = "command", command = "toggle", payload = new { index = key.Slot }, id = context });
-                else await Event("showAlert", context, new { });
-            } catch (WebSocketException) { await Event("showAlert", context, new { }); }
+                else failed = true;
+            } catch (WebSocketException) { failed = true; }
+            if (failed) await Event("showAlert", context, new { });
         }
         if (type == "deviceDidConnect") {
             var device = Map(Get(message, "deviceInfo")); device["id"] = Get(message, "device");
