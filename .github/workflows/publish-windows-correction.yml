@@ -1,0 +1,54 @@
+name: Publish Windows 0.5.2 correction
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Require the prepared draft
+        run: test "$(gh api repos/$GH_REPO/releases/439079730 --jq .draft)" = true
+      - name: Download the exact verified Windows build
+        run: gh run download 42610089545 -n StageDeck-Windows-tested-build -D verified
+      - name: Package Windows and retain the unchanged Mac download
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess,hashlib
+          source=Path('verified')
+          exe=next(source.rglob('StageDeck-0.5.2-Windows-Setup.exe'))
+          plugin=next(source.rglob('com.stagedeck.presentations.streamDeckPlugin'))
+          subprocess.run(['python3','scripts/package-downloads.py','--windows',str(exe),'--windows-plugin',str(plugin.parent),'--destination','release-assets'],check=True)
+          subprocess.run(['gh','release','download','v0.5.1','-p','StageDeck-Mac.zip','-D','release-assets'],check=True)
+          folder=Path('release-assets');mac=folder/'StageDeck-Mac.zip'
+          with mac.open('rb') as f:assert hashlib.file_digest(f,'sha256').hexdigest()=='926c482cf9780c32fbe8dcc251836fc2a10672daacc829f472f1479f1810cf8a'
+          lines=[]
+          for file in sorted(folder.glob('*.zip')):
+            with file.open('rb') as f:digest=hashlib.file_digest(f,'sha256').hexdigest()
+            lines.append(digest+'  '+file.name+'\n')
+          (folder/'SHA256SUMS.txt').write_text(''.join(lines))
+          PY
+      - name: Upload packages to the draft
+        run: gh release upload v0.5.2 release-assets/StageDeck-Windows.zip release-assets/StageDeck-Mac.zip release-assets/SHA256SUMS.txt --clobber
+      - name: Verify remote digests and publish
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess,json,hashlib,os
+          release=json.loads(subprocess.check_output(['gh','api','repos/'+os.environ['GH_REPO']+'/releases/439079730']))
+          assert release['draft']
+          assert {a['name'] for a in release['assets']}=={'StageDeck-Windows.zip','StageDeck-Mac.zip','SHA256SUMS.txt'}
+          for asset in release['assets']:
+            file=Path('release-assets')/asset['name']
+            with file.open('rb') as f:assert asset['digest']=='sha256:'+hashlib.file_digest(f,'sha256').hexdigest()
+          subprocess.run(['gh','release','edit','v0.5.2','--draft=false','--latest'],check=True)
+          PY
