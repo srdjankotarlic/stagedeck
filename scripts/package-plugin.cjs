@@ -26,5 +26,5 @@ if(process.platform==='win32'){
 }
 delete settings.CodePathWin;
 fs.writeFileSync(path.join(staged,'manifest.json'),JSON.stringify(settings,null,2));
-execFileSync(process.execPath,[path.join(root,'node_modules/@elgato/cli/dist/index.js'),'pack',staged,'--output',path.join(root,'dist'),'--force','--no-update-check','--no-file-list'],{stdio:'inherit'});
+execFileSync(process.execPath,[path.join(root,'node_modules/@elgato/cli/bin/streamdeck.mjs'),'pack',staged,'--output',path.join(root,'dist'),'--force','--no-update-check','--no-file-list'],{stdio:'inherit'});
 console.log('Built standalone plugin and 32-key XL profile.');
