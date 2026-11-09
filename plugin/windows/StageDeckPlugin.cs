@@ -92,7 +92,11 @@ internal static class StageDeckPlugin {
             await Event("setTitle", context, new { title = Bridge != null && Bridge.State == WebSocketState.Open ? "Taster " + (key.Slot + 1) : "Otvori\nStageDeck", target = 0 });
         }
     }
-    private static async Task Hello() { await Send(Bridge, BridgeSend, new { type = "hello", devices = Devices }); }
+    private static async Task Hello() {
+        try { await Send(Bridge, BridgeSend, new { type = "hello", devices = Devices }); }
+        catch (WebSocketException) { }
+        catch (ObjectDisposedException) { }
+    }
     private static async Task ConnectBridge() {
         while (!Lifetime.IsCancellationRequested) {
             ClientWebSocket socket = null;
@@ -149,6 +153,7 @@ internal static class StageDeckPlugin {
                 if (Bridge != null && Bridge.State == WebSocketState.Open) await Send(Bridge, BridgeSend, new { type = "command", command = "toggle", payload = new { index = key.Slot }, id = context });
                 else failed = true;
             } catch (WebSocketException) { failed = true; }
+            catch (ObjectDisposedException) { failed = true; }
             if (failed) await Event("showAlert", context, new { });
         }
         if (type == "deviceDidConnect") {
