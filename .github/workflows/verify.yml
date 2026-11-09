@@ -22,6 +22,8 @@ jobs:
       - name: Windows PowerShell and Win32 bridge
         shell: powershell
         run: ./scripts/validate-windows.ps1
+      - name: Actual Windows window capture without Office
+        run: node scripts/check-windows-capture.cjs
       - name: PDF playback, themes, labels and Stream Deck protocol on Windows
         run: |
           node scripts/create-fixtures.cjs
