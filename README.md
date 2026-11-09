@@ -4,6 +4,8 @@ PowerPoint i PDF prezentacije na jednom mestu. Kontrola iz aplikacije ili sa svi
 
 ## Preuzmi
 
+**Windows 0.5.2:** pouzdanije pokretanje PowerPoint prozora, preciznije poruke greške i samostalan Elgato dodatak bez Node runtimea. Mac paket ostaje proverena verzija **0.5.1**.
+
 | Računar | Kompletan paket | Šta pokrenuti posle raspakivanja |
 | --- | --- | --- |
 | **Windows 10 / 11 · 64-bit** | **[PREUZMI WINDOWS](https://github.com/srdjankotarlic/stagedeck/releases/latest/download/StageDeck-Windows.zip)** | `StageDeck-Windows/StageDeck-Setup.exe` |
@@ -13,7 +15,7 @@ PowerPoint i PDF prezentacije na jednom mestu. Kontrola iz aplikacije ili sa svi
 
 Svaki ZIP sadrži aplikaciju, Elgato dodatak, XL profil i kratko uputstvo. Za korišćenje instalacije preuzmi gornji paket; GitHub dugme „Code → Download ZIP“ preuzima razvojni kod.
 
-Windows izdanje ima automatske provere na Windows runneru. **PowerPoint/Presenter View na pravom Windows računaru još zahteva proveru**; [ovde je tačno navedeno šta je provereno](docs/VERIFICATION.md). Na Macu su provereni stvarni PowerPoint, Presenter View, PDF, više monitora i potpuno zatvaranje prezentacije.
+Windows izdanje ima automatske provere na Windows runneru, uključujući stvarne Win32 prozore, hvatanje promenljive slike i samostalni Elgato program. **PowerPoint/Presenter View na pravom Windows računaru još zahteva proveru**; [ovde je tačno navedeno šta je provereno](docs/VERIFICATION.md). Na Macu su provereni stvarni PowerPoint, Presenter View, PDF, više monitora i potpuno zatvaranje prezentacije.
 
 ## Instalacija
 

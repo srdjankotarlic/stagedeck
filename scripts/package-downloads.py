@@ -11,7 +11,7 @@ version = json.loads((root / "package.json").read_text())["version"]
 parser = argparse.ArgumentParser()
 parser.add_argument("--windows", type=Path, required=True)
 parser.add_argument("--windows-plugin", type=Path, required=True)
-parser.add_argument("--mac", type=Path, required=True)
+parser.add_argument("--mac", type=Path)
 parser.add_argument("--destination", type=Path, required=True)
 args = parser.parse_args()
 args.destination.mkdir(parents=True, exist_ok=True)
@@ -22,10 +22,10 @@ def sha(file):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
-for system, installer, name, plugins in (
-    ("Windows", args.windows, "StageDeck-Setup.exe", args.windows_plugin),
-    ("Mac", args.mac, "StageDeck.dmg", root / "release/mac-universal/StageDeck.app/Contents/Resources/installers"),
-):
+packages = [("Windows", args.windows, "StageDeck-Setup.exe", args.windows_plugin)]
+if args.mac:
+    packages.append(("Mac", args.mac, "StageDeck.dmg", root / "release/mac-universal/StageDeck.app/Contents/Resources/installers"))
+for system, installer, name, plugins in packages:
     folder = args.destination / ("StageDeck-" + system)
     folder.mkdir(exist_ok=True)
     shutil.copy2(installer, folder / name)

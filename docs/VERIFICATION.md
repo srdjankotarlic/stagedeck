@@ -1,6 +1,19 @@
-# Verification — 0.5.1
+# Verification
 
 Stability takes priority over startup speed. Existing PowerPoint readiness, output placement, capture and complete-close checks remain in place. Native PowerPoint startup scripts and their waits were not changed.
+
+
+## Windows 0.5.2 — startup and Elgato corrections
+
+[Successful Windows build and installed-app verification](https://github.com/srdjankotarlic/stagedeck/actions/runs/42610089545), 9 November 2026. All 19 unit tests passed, including the native Windows Elgato executable, its packaged entry point, all 32 key mappings, signed/unsigned native window IDs and populated default profile page. Additional tests capture real changing Windows window pixels without Office, move real Win32 windows to independent positions, register the Office STA retry filter, and run the full UI/PDF checks on the installed application.
+
+Changes: Presenter View readiness waits up to 15 seconds instead of 3; the editor's process/window is captured before starting the show; native window placement is verified; Office rejected/busy calls use a bounded STA message filter; capture source enumeration retries until the exact window appears. Errors preserve their startup phase and HRESULT. Settings → Kopiraj detalje copies local diagnostics without the bridge token.
+
+The Windows plugin is a native .NET Framework executable using local WebSockets, with no external Node runtime. The distribution is produced and validated by the official Elgato CLI. Both landing pages have 32 controls, and the XL profile is offered automatically on installation. Mac 0.5.1 and its working installation remain unchanged.
+
+**Remaining boundary:** the reported Office error text was unavailable. The hosted Windows runner has no desktop PowerPoint or physical Stream Deck. These checks verify the changed Windows mechanisms and protocol, but cannot establish that the specific business laptop's Office problem is resolved; it must be retried there with 0.5.2. This release does not claim perfect Windows Office compatibility.
+
+## Historical Mac 0.5.1 measurements
 
 ## Measured Mac performance
 
