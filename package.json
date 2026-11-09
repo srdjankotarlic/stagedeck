@@ -37,12 +37,13 @@
     ],
     "extraResources": [
       {
-        "from": "plugin",
+        "from": "dist/plugin",
         "to": "plugin"
       },
       {
         "from": "dist",
-        "to": "installers"
+        "to": "installers",
+        "filter": ["*.streamDeckPlugin", "*.streamDeckProfile"]
       },
       {
         "from": "INSTALL-SR.md",

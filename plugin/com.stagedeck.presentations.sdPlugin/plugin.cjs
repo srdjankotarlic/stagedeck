@@ -8,7 +8,7 @@ function paint(context){const item=contexts.get(context);if(!item)return;const i
 function hello(){if(bridge?.readyState===WebSocket.OPEN)bridge.send(JSON.stringify({type:'hello',devices:(info.devices||[]).map(d=>({id:d.id,type:d.type,name:d.name}))}));}
 function connect(){
   clearTimeout(retry);
-  const base=process.env.STAGEDECK_TEST_DATA||(process.platform==='darwin'?path.join(os.homedir(),'Library/Application Support/StageDeck'):path.join(process.env.APPDATA||'','StageDeck'));
+  const base=process.env.STAGEDECK_TEST_DATA||(process.platform==='darwin'?path.join(os.homedir(),'Library/Application Support/StageDeck'):path.join(process.env.APPDATA||path.join(os.homedir(),'AppData/Roaming'),'StageDeck'));
   try{const config=JSON.parse(fs.readFileSync(path.join(base,'bridge.json'),'utf8'));bridge=new WebSocket(`ws://127.0.0.1:${config.port}/deck?token=${encodeURIComponent(config.token)}`);}catch{retry=setTimeout(connect,2000);return;}
   bridge.on('open',hello);
   bridge.on('message',raw=>{try{const message=JSON.parse(raw.toString());if(message.type==='keys'){images=message.images;for(const context of contexts.keys())paint(context);}if(message.type==='state'){snapshot=message.state;}if(message.type==='result'&&!message.ok&&message.id)send('showAlert',message.id,{});}catch{}});

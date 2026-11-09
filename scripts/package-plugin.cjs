@@ -13,5 +13,18 @@ zip.writeZip(path.join(root,'dist/StageDeck XL.streamDeckProfile'));zip.writeZip
 // The plugin is standalone; it must not depend on the app's node_modules.
 fs.mkdirSync(path.join(plugin,'node_modules'),{recursive:true});fs.cpSync(path.dirname(require.resolve('ws/package.json')),path.join(plugin,'node_modules/ws'),{recursive:true});
 const {execFileSync}=require('node:child_process');
-execFileSync(process.execPath,[path.join(root,'node_modules/@elgato/cli/dist/index.js'),'pack',plugin,'--output',path.join(root,'dist'),'--force','--no-update-check','--no-file-list'],{stdio:'inherit'});
+const staged=path.join(root,'dist/plugin/com.stagedeck.presentations.sdPlugin');
+fs.rmSync(path.dirname(staged),{recursive:true,force:true});fs.mkdirSync(path.dirname(staged),{recursive:true});fs.cpSync(plugin,staged,{recursive:true});
+const settings=JSON.parse(fs.readFileSync(path.join(staged,'manifest.json'),'utf8'));
+if(process.platform==='win32'){
+ settings.CodePath=settings.CodePathWin;delete settings.Nodejs;
+ settings.OS=settings.OS.filter(os=>os.Platform==='windows');
+ fs.rmSync(path.join(staged,'node_modules'),{recursive:true,force:true});
+}else{
+ settings.OS=settings.OS.filter(os=>os.Platform==='mac');
+ fs.rmSync(path.join(staged,'windows'),{recursive:true,force:true});
+}
+delete settings.CodePathWin;
+fs.writeFileSync(path.join(staged,'manifest.json'),JSON.stringify(settings,null,2));
+execFileSync(process.execPath,[path.join(root,'node_modules/@elgato/cli/dist/index.js'),'pack',staged,'--output',path.join(root,'dist'),'--force','--no-update-check','--no-file-list'],{stdio:'inherit'});
 console.log('Built standalone plugin and 32-key XL profile.');
