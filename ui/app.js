@@ -69,6 +69,7 @@ $('desktop-shortcut').onclick = async () => { const r=await command('desktop-sho
 document.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>command('theme',{theme:b.dataset.theme}));
 $('install-plugin').onclick = async () => { const r=await command('install-plugin'); $('setup-result').textContent=r.message || r.error; };
 $('import-profile').onclick = () => command('import-profile');
+$('copy-diagnostics').onclick = async () => { const r=await command('copy-diagnostics'); $('setup-result').textContent=r.message||r.error; };
 $('screens').onclick=()=>$('screens-dialog').showModal();
 $('setup-screens').onclick=()=>{$('setup-dialog').close();$('screens-dialog').showModal();};
 $('close-screens').onclick=()=>$('screens-dialog').close();

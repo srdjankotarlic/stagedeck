@@ -2,13 +2,14 @@
   "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
   "UUID": "com.stagedeck.presentations",
   "Name": "StageDeck",
-  "Version": "0.5.1.0",
+  "Version": "0.5.2.0",
   "Author": "StageDeck",
   "Description": "Your PowerPoint and PDF presentations, one key away.",
   "Category": "StageDeck",
   "CategoryIcon": "images/category",
   "Icon": "images/plugin",
   "CodePath": "plugin.cjs",
+  "CodePathWin": "windows/StageDeckPlugin.exe",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "6.6"
@@ -30,7 +31,7 @@
     {
       "Name": "profiles/StageDeck XL",
       "DeviceType": 2,
-      "AutoInstall": false,
+      "AutoInstall": true,
       "Readonly": false,
       "DontAutoSwitchWhenInstalled": true
     }

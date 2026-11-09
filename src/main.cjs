@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, screen, nativeImage, Menu, nativeTheme, systemPreferences, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, screen, nativeImage, Menu, nativeTheme, systemPreferences, globalShortcut, clipboard } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
@@ -354,6 +354,14 @@ async function command(name, payload = {}) {
       case 'desktop-shortcut': return await createDesktopShortcut();
       case 'display': library.displayId = Number(payload.id); persist(); break;
       case 'dismiss-error': lastError = ''; break;
+      case 'copy-diagnostics': {
+        const pluginDirectory=process.platform==='win32'?path.join(app.getPath('appData'),'Elgato/StreamDeck/Plugins/com.stagedeck.presentations.sdPlugin'):path.join(app.getPath('appData'),'com.elgato.StreamDeck/Plugins/com.stagedeck.presentations.sdPlugin');
+        let plugin={installed:false};
+        try{const manifest=JSON.parse(fs.readFileSync(path.join(pluginDirectory,'manifest.json'),'utf8'));const entry=process.platform==='win32'?(manifest.CodePathWin||manifest.CodePath):(manifest.CodePathMac||manifest.CodePath);plugin={installed:true,version:manifest.Version,entry,entryExists:fs.existsSync(path.join(pluginDirectory,entry))};}catch{}
+        const report={version:app.getVersion(),platform:process.platform,os:os.release(),electron:process.versions.electron,error:lastError,powerPointError:pptError,powerPoint:ppt.diagnostics(),plugin,streamDeckConnected:devices.size>0,roles:outputPlan().assignments,displays:screen.getAllDisplays().map(d=>({id:d.id,label:d.label,bounds:d.bounds,scaleFactor:d.scaleFactor})),outputs:mirrors?.snapshot()||[]};
+        clipboard.writeText(JSON.stringify(report,null,2));
+        return {ok:true,message:'Detalji su kopirani.'};
+      }
       case 'key-images': {
         if (!Array.isArray(payload.images) || payload.images.length !== 32 || !payload.images.every(i => typeof i === 'string' && i.startsWith('data:image/png;base64,') && i.length < 300000)) return { ok: false };
         keyImages = payload.images;

@@ -4,6 +4,7 @@ const readline = require('node:readline');
 const nativeDirectory = path.join(__dirname, 'native').replace(/app\.asar([\\/])/, 'app.asar.unpacked$1');
 class PowerPoint {
   constructor() { this.pending = new Map(); this.counter = 0; this.queue = Promise.resolve(); }
+  diagnostics() { return this.lastFailure||null; }
   warmup() { if (process.platform === 'win32' && !this.child) this.startWindows(); }
   execute(operation, file = '', output = '', options = {}) {
     const next = this.queue.then(async () => {
@@ -41,9 +42,9 @@ class PowerPoint {
       const id = ++this.counter;
       const timer = setTimeout(() => {
         this.pending.delete(id); this.child?.kill(); this.child = null;
-        reject(Error('PowerPoint nije odgovorio na vreme.'));
+        const message='PowerPoint nije odgovorio na vreme ('+operation+').';this.lastFailure={operation,stage:'timeout',message};reject(Error(message));
       }, ['start','thumbnail'].includes(operation) ? 60000 : 12000);
-      this.pending.set(id, { resolve, reject, timer });
+      this.pending.set(id, { resolve, reject, timer, operation });
       this.child.stdin.write(JSON.stringify({ id, operation, path: file, output, options }) + '\n');
     });
   }
@@ -56,17 +57,20 @@ class PowerPoint {
         const message = JSON.parse(line), p = this.pending.get(message.id);
         if (!p) return;
         clearTimeout(p.timer); this.pending.delete(message.id);
-        message.error ? p.reject(Error(message.error)) : p.resolve(message.result);
+        if(message.error){this.lastFailure={operation:p.operation,...message.diagnostics,message:message.error};p.reject(Error(message.error));}
+        else p.resolve(message.result);
       } catch { /* PowerShell startup messages are not protocol replies. */ }
     });
     const failed = error => {
       if (this.child !== child) return;
-      for (const p of this.pending.values()) { clearTimeout(p.timer); p.reject(Error(error?.message || 'PowerPoint veza je prekinuta.')); }
+      const message=error?.message||('PowerPoint Windows veza je prekinuta.'+(stderr?' '+stderr.trim().slice(-1000):''));
+      this.lastFailure={stage:'windows-worker',message};
+      for (const p of this.pending.values()) { clearTimeout(p.timer); p.reject(Error(message)); }
       this.pending.clear(); this.child = null;
     };
     child.on('error', failed); child.on('exit', () => failed());
     child.stdin.on('error', failed);
-    child.stderr.on('data', () => {});
+    let stderr='';child.stderr.on('data', chunk => {stderr=(stderr+chunk).slice(-2000);});
   }
   dispose() { this.child?.kill(); }
 }

@@ -7,3 +7,4 @@ src/native/display-helper
 src/native/window-capture
 src/native/*.scpt
 .DS_Store
+plugin/com.stagedeck.presentations.sdPlugin/windows/*.exe

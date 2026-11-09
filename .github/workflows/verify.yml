@@ -16,6 +16,9 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - name: Build the standalone Windows Elgato plugin
+        shell: powershell
+        run: ./scripts/build-plugin-windows.ps1
       - run: npm run assets
       - run: npm run plugin
       - run: npm test
@@ -24,6 +27,9 @@ jobs:
         run: ./scripts/validate-windows.ps1
       - name: Actual Windows window capture without Office
         run: node scripts/check-windows-capture.cjs
+      - name: Real Win32 routing and Office retry filter
+        shell: powershell
+        run: ./scripts/check-windows-routing.ps1
       - name: PDF playback, themes, labels and Stream Deck protocol on Windows
         run: |
           node scripts/create-fixtures.cjs
@@ -47,4 +53,5 @@ jobs:
           path: |
             release/StageDeck-*-Windows-Setup.exe
             release/win-unpacked/resources/installers/*
+            plugin/com.stagedeck.presentations.sdPlugin/windows/StageDeckPlugin.exe
           if-no-files-found: error

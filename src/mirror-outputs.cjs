@@ -1,5 +1,6 @@
 const path=require('node:path');const {spawn}=require('node:child_process');const readline=require('node:readline');
 const {BrowserWindow,desktopCapturer,ipcMain,session,webContents,systemPreferences}=require('electron');
+const {findWindowSource}=require('./window-source.cjs');
 class MirrorOutputs{
  constructor(onFailure){
   this.outputs=new Map();this.onFailure=onFailure;this.generation=0;
@@ -15,10 +16,17 @@ class MirrorOutputs{
   if(!this.permission())throw Error('Za PowerPoint izlaze dozvoli StageDeck u macOS Screen & System Audio Recording, pa ponovo pokreni aplikaciju.');
   const generation=++this.generation,ready=[],loaded=[];
   const native=process.platform==='darwin';let sources=[];
-  if(!native)sources=await desktopCapturer.getSources({types:['window'],thumbnailSize:{width:0,height:0},fetchWindowIcons:false});
+  if(!native){
+   const deadline=Date.now()+6000;
+   do{
+    sources=await desktopCapturer.getSources({types:['window'],thumbnailSize:{width:0,height:0},fetchWindowIcons:false});
+    if(targets.every(target=>findWindowSource(sources,handles[target.role])))break;
+    await new Promise(resolve=>setTimeout(resolve,150));
+   }while(Date.now()<deadline);
+  }
   for(const target of targets){
    let source=null;
-   if(!native){const handle=handles[target.role];if(handle)source=sources.find(s=>s.id.startsWith('window:'+String(handle)+':'));if(!source)throw Error('Izvorni PowerPoint '+target.role+' prozor nije pronađen.');}
+   if(!native){source=findWindowSource(sources,handles[target.role]);if(!source)throw Error('PowerPoint ['+target.role+']: prozor nije dostupan za prikaz. Zatvori otvorene Office dijaloge i ponovi GO.');}
    const window=new BrowserWindow({...target.display.bounds,frame:false,show:false,alwaysOnTop:true,backgroundColor:'#000000',autoHideMenuBar:true,skipTaskbar:true,title:`StageDeck · ${target.role} · ${target.display.id}`,webPreferences:{preload:path.join(__dirname,'mirror-preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false,session:this.session}});
    if(native){window.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});window.setSimpleFullScreen(true);}else window.setFullScreen(true);
    window.setAlwaysOnTop(true,'screen-saver');

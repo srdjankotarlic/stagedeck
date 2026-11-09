@@ -9,4 +9,6 @@ test('XL profile has real pages, uppercase UUID folders and exactly 32 unique ac
   const actions=page.Controllers[0].Actions;assert.equal(Object.keys(actions).length,32);
   assert.deepEqual(Object.values(actions).map(a=>a.Settings.slot).sort((a,b)=>a-b),Array.from({length:32},(_,i)=>i));
   assert.equal(actions['7,3'].Settings.slot,31);
+  const fallback=JSON.parse(zip.readAsText(`${folder}Profiles/${manifest.Pages.Default.toUpperCase()}/manifest.json`));
+  assert.equal(Object.keys(fallback.Controllers[0].Actions).length,32,'the default landing page must never be empty');
 });
