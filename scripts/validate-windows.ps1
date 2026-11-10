@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $native = Join-Path $PSScriptRoot '..\src\native'
-foreach ($name in @('powerpoint.ps1', 'windows-display.ps1')) {
+foreach ($name in @('powerpoint.ps1', 'windows-display.ps1', 'powerpoint-lifecycle.ps1')) {
   $parseErrors = $null
   $tokens = $null
   [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $native $name), [ref]$tokens, [ref]$parseErrors) | Out-Null

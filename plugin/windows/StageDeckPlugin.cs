@@ -49,6 +49,7 @@ internal static class StageDeckPlugin {
         Deck.Options.Proxy = null;
         await Deck.ConnectAsync(new Uri("ws://127.0.0.1:" + options["-port"]), Lifetime.Token);
         await Send(Deck, DeckSend, new { @event = options["-registerEvent"], uuid = options["-pluginUUID"] });
+        Log("Elgato registered; devices=" + Devices.Length);
         Task connection = ConnectBridge();
         Exception failure = null;
         try { await Receive(Deck, OnDeck); }
@@ -110,6 +111,7 @@ internal static class StageDeckPlugin {
                     await socket.ConnectAsync(new Uri("ws://127.0.0.1:" + port + "/deck?token=" + Uri.EscapeDataString(token)), timeout.Token);
                 }
                 await Hello();
+                Log("StageDeck bridge connected");
                 foreach (string context in Keys.Keys) await Paint(context);
                 await Receive(socket, OnBridge);
             } catch (OperationCanceledException) { if (Lifetime.IsCancellationRequested) return; }
@@ -117,6 +119,7 @@ internal static class StageDeckPlugin {
             finally {
                 if (socket != null) socket.Dispose();
                 if (Bridge == socket) Bridge = null;
+                Log("StageDeck bridge disconnected");
                 Images = new string[0];
             }
             if (Lifetime.IsCancellationRequested) return;
@@ -129,10 +132,14 @@ internal static class StageDeckPlugin {
         if (type == "keys") {
             var values = Get(message, "images") as object[];
             if (values == null || values.Length != 32) return;
+            if (Images.Length == 0) Log("Received 32 key images");
             var images = new string[32]; for (int i = 0; i < 32; i++) images[i] = Convert.ToString(values[i]); Images = images;
             foreach (string context in Keys.Keys) await Paint(context);
         }
-        if (type == "result" && Get(message, "ok") is bool && !(bool)message["ok"]) await Event("showAlert", Text(message, "id"), new { });
+        if (type == "result" && Get(message, "ok") is bool) {
+            Log("Command result: " + ((bool)message["ok"] ? "ok" : "failed"));
+            if (!(bool)message["ok"]) await Event("showAlert", Text(message, "id"), new { });
+        }
     }
     private static async Task OnDeck(Dictionary<string, object> message) {
         string type = Text(message, "event"), context = Text(message, "context");
@@ -148,6 +155,7 @@ internal static class StageDeckPlugin {
         if (type == "willDisappear") { Key old; Keys.TryRemove(context, out old); }
         if (type == "keyDown") {
             Key key; if (!Keys.TryGetValue(context, out key)) return;
+            Log("Hardware keyDown slot=" + (key.Slot + 1));
             bool failed = false;
             try {
                 if (Bridge != null && Bridge.State == WebSocketState.Open) await Send(Bridge, BridgeSend, new { type = "command", command = "toggle", payload = new { index = key.Slot }, id = context });
@@ -157,10 +165,12 @@ internal static class StageDeckPlugin {
             if (failed) await Event("showAlert", context, new { });
         }
         if (type == "deviceDidConnect") {
+            Log("Elgato device connected");
             var device = Map(Get(message, "deviceInfo")); device["id"] = Get(message, "device");
             var devices = new List<object>(Devices); devices.Add(device); Devices = devices.ToArray(); await Hello();
         }
         if (type == "deviceDidDisconnect") {
+            Log("Elgato device disconnected");
             var devices = new List<object>(); foreach (object device in Devices) if (Text(Map(device), "id") != Text(message, "device")) devices.Add(device);
             Devices = devices.ToArray(); await Hello();
         }

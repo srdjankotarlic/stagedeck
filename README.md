@@ -4,23 +4,23 @@ PowerPoint i PDF prezentacije na jednom mestu. Kontrola iz aplikacije ili sa svi
 
 ## Preuzmi
 
-**Windows 0.5.2:** pouzdanije pokretanje PowerPoint prozora, preciznije poruke greške i samostalan Elgato dodatak bez Node runtimea. Mac paket ostaje proverena verzija **0.5.1**.
+**Windows 0.5.6:** provereno otvaranje i potpuno zatvaranje PowerPoint prozora na stvarnom Windows računaru, sa fizičkim Stream Deck XL-om. Mac paket ostaje proverena verzija **0.5.1**.
 
 | Računar | Kompletan paket | Šta pokrenuti posle raspakivanja |
 | --- | --- | --- |
-| **Windows 10 / 11 · 64-bit** | **[PREUZMI WINDOWS](https://github.com/srdjankotarlic/stagedeck/releases/latest/download/StageDeck-Windows.zip)** | `StageDeck-Windows/StageDeck-Setup.exe` |
+| **Windows 10 / 11 · 64-bit** | **[PREUZMI WINDOWS](https://github.com/srdjankotarlic/stagedeck/releases/latest/download/StageDeck-Windows.zip)** | `INSTALIRAJ SVE.cmd` u raspakovanom folderu |
 | **Mac · Intel i Apple Silicon** | **[PREUZMI MAC](https://github.com/srdjankotarlic/stagedeck/releases/latest/download/StageDeck-Mac.zip)** | `StageDeck-Mac/StageDeck.dmg` |
 
 **[Sva izdanja i datoteke →](https://github.com/srdjankotarlic/stagedeck/releases)**
 
 Svaki ZIP sadrži aplikaciju, Elgato dodatak, XL profil i kratko uputstvo. Za korišćenje instalacije preuzmi gornji paket; GitHub dugme „Code → Download ZIP“ preuzima razvojni kod.
 
-Windows izdanje ima automatske provere na Windows runneru, uključujući stvarne Win32 prozore, hvatanje promenljive slike i samostalni Elgato program. **PowerPoint/Presenter View na pravom Windows računaru još zahteva proveru**; [ovde je tačno navedeno šta je provereno](docs/VERIFICATION.md). Na Macu su provereni stvarni PowerPoint, Presenter View, PDF, više monitora i potpuno zatvaranje prezentacije.
+Windows 0.5.6 je instaliran i proveren na Windows 11 sa desktop PowerPointom 2010 x64, dva fizička monitora i fizičkim Stream Deck XL-om. Provereni su crveni LIVE, oba pritiska istog tastera, potpuno zatvaranje svih prozora i ponovno otvaranje. Drugi računari i Office verzije zahtevaju svoju proveru; [ovde su merenja i granice provere](docs/VERIFICATION.md). Mac paket nije menjan.
 
 ## Instalacija
 
 1. Preuzmi paket za svoj sistem i raspakuj ZIP.
-2. Windows: pokreni `StageDeck-Setup.exe`. Mac: otvori `StageDeck.dmg` i prevuci StageDeck u Applications.
+2. Windows: pokreni `INSTALIRAJ SVE.cmd` za aplikaciju i Windows Elgato dodatak. Mac: otvori `StageDeck.dmg` i prevuci StageDeck u Applications.
 3. Pokreni StageDeck sa desktop ikonice ili iz Applications / Start menija.
 4. Za Stream Deck: instaliraj zvaničnu Elgato aplikaciju. U StageDecku otvori **Podešavanja → Instaliraj dodatak**, zatim uvezi **StageDeck XL profil**. Isti fajlovi su u folderu `Elgato` unutar preuzetog paketa. Postojeći Elgato profili ostaju sačuvani.
 

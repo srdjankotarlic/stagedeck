@@ -194,6 +194,7 @@ async function toggle(index) {
   const slot = event().slots[index]; if (!slot) return { ok: true };
   if (!fs.existsSync(slot.path)) throw Error('Fajl nije pronađen. Ponovo poveži ili zameni prezentaciju.');
   busy = true; screenChangePending=false; loading = slot.id; lastError = ''; errors.delete(slot.id); publish();
+  const closingCurrent=live?.id===slot.id;
   try {
     if (live?.id === slot.id) { await stopLive(); return { ok: true }; }
     await stopLive({keepGuards:true});
@@ -232,6 +233,8 @@ async function toggle(index) {
     clearGuards();
     return { ok: true };
   } catch (error) {
+    // A failed close must stay red and retryable until Office confirms closure.
+    if(closingCurrent)return fail(error,slot);
     mirrors?.stop();
     for(const win of pdfWindows)if(!win.isDestroyed())win.destroy();pdfWindows.clear();pdfWindow=null;live=null;
     if(slot.kind!=='pdf')await ppt.execute('stop',slot.path).catch(()=>{});

@@ -13,6 +13,11 @@ class PowerPoint {
         if (options.control && options.audienceIndex) await this.run('configure', file, output, {...options, wasSaved:prepared.wasSaved});
       }
       const result = await this.run(operation, file, output, options);
+      if (process.platform === 'win32' && result.officeClosed) {
+        // Office 2010 may retain its editor until the automation worker exits.
+        await this.retireWindows();
+        if (result.closingHandles?.length) await this.run('confirm-close', file, '', {handles:result.closingHandles});
+      }
       return result;
     });
     this.queue = next.catch(() => {});
@@ -48,8 +53,19 @@ class PowerPoint {
       this.child.stdin.write(JSON.stringify({ id, operation, path: file, output, options }) + '\n');
     });
   }
+  async retireWindows() {
+    const child=this.child;if(!child)return;
+    this.child=null;
+    if(child.exitCode!==null)return;
+    await new Promise(resolve=>{
+      const timer=setTimeout(()=>{child.kill();resolve();},2000);
+      child.once('exit',()=>{clearTimeout(timer);resolve();});
+      child.stdin.end();
+    });
+  }
   startWindows() {
-    this.child = spawn('powershell.exe', ['-NoLogo', '-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', path.join(nativeDirectory, 'powerpoint.ps1')], { windowsHide: true, stdio: ['pipe','pipe','pipe'] });
+    const powershell = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+    this.child = spawn(powershell, ['-NoLogo', '-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', path.join(nativeDirectory, 'powerpoint.ps1')], { windowsHide: true, stdio: ['pipe','pipe','pipe'] });
     const child = this.child;
     readline.createInterface({ input: child.stdout }).on('line', line => {
       if (this.child !== child) return;

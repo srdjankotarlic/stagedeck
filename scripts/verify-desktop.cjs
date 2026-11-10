@@ -14,7 +14,7 @@ class CDP{
 (async()=>{
  const executable=path.resolve(process.argv[2]||process.execPath),fixture=path.resolve(process.argv[3]||path.join(__dirname,'fixtures/01 Otvaranje.pptx'));
  if(!['win32','darwin'].includes(process.platform))throw Error('Run on Windows or macOS.');
- const output=path.join(os.homedir(),'Desktop',`StageDeck-provera-${new Date().toISOString().replace(/[:.]/g,'-')}.json`);
+ const output=process.env.STAGEDECK_VERIFICATION_OUTPUT||path.join(os.homedir(),'Desktop',`StageDeck-provera-${new Date().toISOString().replace(/[:.]/g,'-')}.json`);
  const data=fs.mkdtempSync(path.join(os.tmpdir(),'StageDeck-verify-')),file=path.join(data,'Provera ČĆŽ ŠĐ.pptx');fs.copyFileSync(fixture,file);
  const debugPort=await freePort(),bridgePort=await freePort();const env={...process.env,STAGEDECK_TEST_DATA:data,STAGEDECK_TEST_PORT:String(bridgePort)};delete env.ELECTRON_RUN_AS_NODE;
  const child=spawn(executable,[...(process.argv[4]?[process.argv[4]]:[]),`--remote-debugging-port=${debugPort}`,'--remote-debugging-address=127.0.0.1'],{env,stdio:'ignore'});let cdp,deckSocket,native;const checks=[];const report={platform:process.platform,app:executable,started:new Date().toISOString(),checks};
@@ -22,7 +22,7 @@ class CDP{
  try{
   const pages=()=>fetch(`http://127.0.0.1:${debugPort}/json/list`).then(r=>r.json());
   const page=await until(async()=>(await pages()).find(p=>p.url.includes('/index.html')));cdp=await CDP.connect(page.webSocketDebuggerUrl);
-  const get=()=>cdp.evaluate('window.stage.getState()');await until(async()=>!!(await get()).current);const initial=await get();const moduleFile=fs.existsSync(path.join(__dirname,'../src/powerpoint.cjs'))?path.join(__dirname,'../src/powerpoint.cjs'):path.join(__dirname,'../app.asar/src/powerpoint.cjs');native=new (require(moduleFile).PowerPoint)();const baseline=await native.execute('status');report.officeVersion=baseline.officeVersion;report.version=initial.version;report.displays=initial.displays;
+  const get=()=>cdp.evaluate('window.stage.getState()');await until(async()=>!!(await get()).current);const initial=await get();const moduleFile=fs.existsSync(path.join(__dirname,'../src/powerpoint.cjs'))?path.join(__dirname,'../src/powerpoint.cjs'):path.join(__dirname,'../app.asar/src/powerpoint.cjs');native=new (require(moduleFile).PowerPoint)();const baseline=await native.execute('status');report.officeVersion=baseline.officeVersion;report.version=initial.version;report.displays=initial.displays;native.dispose();native=null;
   const command=(name,payload={})=>cdp.evaluate(`window.stage.command(${JSON.stringify(name)},${JSON.stringify(payload)})`);
   const click=selector=>cdp.evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
   const idle=()=>until(async()=>{const s=await get();return !s.busy?s:false;},60000);
@@ -41,7 +41,7 @@ class CDP{
   const before=await Promise.all(sessions.map(s=>s.evaluate(hash)));await click('#next');await until(async()=>(await get()).live?.slide===2);
   for(let i=0;i<sessions.length;i++)await until(async()=>await sessions[i].evaluate(hash)!==before[i]);sessions.forEach(s=>s.close());pass('Actual slide position and output pixels change');
   assert.equal((await command('play',{id,eventId:live.current.id})).ok,true);assert.equal((await get()).live.slide,2);pass('Repeated GO cannot stop or restart the live presentation');
-  await click('#stop');assert.equal((await idle()).live,null);assert.equal((await pages()).filter(p=>p.url.includes('/mirror.html')).length,0);const closed=await native.execute('status');assert.equal(closed.windows.length,0);assert.equal(closed.documentCount,baseline.documentCount||0);pass('Stop closes the native document and every output');
+  await click('#stop');assert.equal((await idle()).live,null);assert.equal((await pages()).filter(p=>p.url.includes('/mirror.html')).length,0);native=new (require(moduleFile).PowerPoint)();const closed=await native.execute('status');native.dispose();native=null;assert.equal(closed.windows.length,0);assert.equal(closed.documentCount,baseline.documentCount||0);if(process.platform==='win32'&&!baseline.documentCount&&!baseline.protectedDocumentCount)assert.equal(closed.running,false,'Stop must quit empty PowerPoint, including its editor');pass('Stop closes the native document, outputs and empty PowerPoint editor');
   const bridge=JSON.parse(fs.readFileSync(path.join(data,'bridge.json')));deckSocket=new WebSocket(`ws://127.0.0.1:${bridge.port}/deck?token=${bridge.token}`);
   await new Promise((r,j)=>{deckSocket.addEventListener('open',r,{once:true});deckSocket.addEventListener('error',j,{once:true});});const messages=[];deckSocket.addEventListener('message',event=>messages.push(JSON.parse(event.data)));
   deckSocket.send(JSON.stringify({type:'hello',devices:[{id:'verification-xl',type:2,name:'Verification XL'}]}));

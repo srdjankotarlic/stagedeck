@@ -1,4 +1,4 @@
-StageDeck Windows 0.5.2 / Mac 0.5.1 — ekrani, samostalan rad i nazivi
+StageDeck Windows 0.5.6 / Mac 0.5.1 — ekrani, samostalan rad i nazivi
 
 EKRANI
 Klikni „Ekrani“ u gornjem delu aplikacije.
@@ -38,17 +38,17 @@ Kopiraju se isključivo prozori izabranog PowerPoint dokumenta. Slike ostaju lok
 Mac izdanje koristi stalan lokalni sertifikat za potpisivanje. Buduće verzije koriste isti identitet, da svaka izmena ne bi poništavala dozvole. Sertifikat nije sistemski instaliran kao pouzdan koren i izdanje nema Apple Developer ID/notarizaciju. Prva instalacija i dalje zahteva standardna macOS odobrenja.
 
 WINDOWS
-Pokreni StageDeck-0.5.2-Windows-Setup.exe. Instalacija pravi desktop i Start meni prečice.
+Pokreni StageDeck-0.5.6-Windows-Setup.exe (u kompletnom folderu: StageDeck-Setup.exe). Instalacija pravi desktop i Start meni prečice.
 Potreban je Windows 10/11 x64 i desktop Microsoft PowerPoint. Windows PowerShell se koristi za COM integraciju.
 Windows 0.5.2 čeka spremnost Presenter View prozora do 15 sekundi, proverava položaje izvornih prozora i ponavlja Office pozive kada je PowerPoint zauzet. Negativni 32-bitni HWND identifikatori pravilno se povezuju sa Windows izlazom. Ako se greška ponovi, Podešavanja → Kopiraj detalje kopira fazu greške, Office odgovor i stanje dodatka; token veze se ne kopira.
-Ciljna Office verzija je Microsoft 365 / PowerPoint 2021 ili noviji. Windows instalacioni paket je napravljen, ali native Office/Win32/video-capture putanja još nije testirana na pravom Windows računaru sa PowerPointom. Mac rezultati ne potvrđuju rad Windows integracije.
+Windows 0.5.6 podržava i Office COM objekte koji nemaju HWND svojstvo: stvarni prozori se povezuju sa izabranim dokumentom i geometrijom slideshowa. Na Windows 11 23H2 računaru sa dva 1920×1080 monitora potvrđeni su PowerPoint 2010 x64, slajdovi, izvorni Presenter View sa beleškama, navigacija i potpuno zatvaranje. Ovo ne potvrđuje druge Office verzije, druga skaliranja ili firmin laptop; pre događaja proveri isti paket na tom računaru.
 Za stvarnu proveru otvori resources\validation\Proveri Windows.cmd u instalacionom folderu StageDecka. Test koristi zasebnu biblioteku i test prezentaciju: proverava izbor + GO, krupan natpis, stvarni PowerPoint, promenu slike na izlazima, zatvaranje i Stream Deck protokol. Privremeno zauzima ekrane; ne pokreći ga tokom događaja. Izveštaj StageDeck-provera-*.json ostaje na Desktopu. Ova provera sama ne potvrđuje sve verzije Windowsa i rasporede monitora.
 Izdanje nema komercijalni Windows potpis.
 
 OPCIONI STREAM DECK
 Instaliraj zvaničnu Elgato Stream Deck aplikaciju 6.6 ili noviju.
 U StageDeck podešavanjima izaberi Instaliraj dodatak, pa potvrdi instalaciju u Elgato aplikaciji. Zatim uvezi StageDeck XL profil.
-Windows 0.5.2 dodatak je samostalan Windows program i ne traži Node.js ni preuzimanje Node runtimea iz Elgata. Posle ažuriranja StageDecka instaliraj i NOVI dodatak iz novog Elgato foldera / Podešavanja, potvrdi Update u Stream Decku i izaberi StageDeck XL profil. Profil sadrži svih 32 tastera i automatski se nudi pri instalaciji dodatka.
+Windows 0.5.6 dodatak je samostalan Windows program i ne traži Node.js ni preuzimanje Node runtimea iz Elgata. Posle ažuriranja StageDecka instaliraj i NOVI dodatak iz novog Elgato foldera / Podešavanja, potvrdi Update u Stream Decku i izaberi StageDeck XL profil. Profil sadrži svih 32 tastera i automatski se nudi pri instalaciji dodatka. Veza, prijem 32 slike, fizički pritisci i odgovori beleže se u APPDATA\StageDeck\streamdeck-plugin.log; tokeni i sadržaj prezentacija se ne zapisuju.
 Dodatak i profil su u oba paketa. Postojeći profili se ne brišu.
 Aplikacija i dodatak rade lokalno, bez naloga i interneta.
 

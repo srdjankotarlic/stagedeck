@@ -24,7 +24,9 @@ jobs:
       - run: npm test
       - name: Windows PowerShell and Win32 bridge
         shell: powershell
-        run: ./scripts/validate-windows.ps1
+        run: |
+          ./scripts/validate-windows.ps1
+          ./scripts/check-powerpoint-lifecycle.ps1
       - name: Actual Windows window capture without Office
         run: node scripts/check-windows-capture.cjs
       - name: Real Win32 routing and Office retry filter

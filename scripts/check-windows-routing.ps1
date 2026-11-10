@@ -22,6 +22,10 @@ try {
   if($handles.slides -ne [long]$slides.Handle -or $handles.notes -ne [long]$notes.Handle){throw 'Wrong native source selected.'}
   if(-not [PptDisplay]::Matches($handles.slides,50,50,320,180)){throw 'Slides position was not verified.'}
   if(-not [PptDisplay]::Matches($handles.notes,450,50,320,180)){throw 'Presenter position was not verified.'}
+  if(-not [PptDisplay]::ShowGeometry($handles.slides,37.5,37.5,240,135)){throw 'Office points were not correlated with physical pixels.'}
+  $slides.Text='PowerPoint Slide Show - [Specific deck.pptx [Read-Only]]'
+  if(-not [PptDisplay]::DocumentTitle($handles.slides,'Specific deck.pptx')){throw 'Legacy document title was not recognized.'}
+  if([PptDisplay]::DocumentTitle($handles.slides,'deck.pptx')){throw 'A substring incorrectly matched another document.'}
   $options.showPresenter=$false
   $single=Set-ProjectionWindows ([pscustomobject]@{HWND=$root}) ([pscustomobject]@{HWND=[long]$slides.Handle}) $options $root $before
   if($single.ContainsKey('notes')){throw 'Slides-only routing incorrectly requires Presenter View.'}
