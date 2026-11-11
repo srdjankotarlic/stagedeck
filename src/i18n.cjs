@@ -19,4 +19,10 @@ function localResult(language, result) {
     ...(result.message && { message: localMessage(language, result.message) }) };
 }
 
-module.exports = { languageOf, text, localMessage, localResult };
+const outputLabels = language => ({
+  language: languageOf(language),
+  controls: text(language, 'Kontrole'),
+  close: text(language, 'Zatvori'),
+  title: text(language, 'StageDeck izlaz')
+});
+module.exports = { languageOf, text, localMessage, localResult, outputLabels };

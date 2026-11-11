@@ -15,7 +15,7 @@ const { planDisplays } = require('./displays.cjs');
 const { rolePlan,validateRoles } = require('./role-plan.cjs');
 const { placeSource } = require('./source-placement.cjs');
 const { MirrorOutputs } = require('./mirror-outputs.cjs');
-const { languageOf, text, localMessage, localResult } = require('./i18n.cjs');
+const { languageOf, text, localMessage, localResult, outputLabels } = require('./i18n.cjs');
 const language = () => languageOf(library.language);
 const t = (key, values) => text(language(), key, values);
 const presentMessage = value => localMessage(language(), value);
@@ -357,7 +357,7 @@ async function command(name, payload = {}) {
         if (!['en','sr'].includes(payload.language)) throw Error('Nepostojeći jezik.');
         library.language = payload.language; persist(); refreshMenu();
         for (const {window} of mirrors?.outputs.values() || []) {
-          if (!window.isDestroyed()) window.webContents.send('output:language', language());
+          if (!window.isDestroyed()) window.webContents.send('output:language', outputLabels(language()));
         }
         break;
       case 'theme':

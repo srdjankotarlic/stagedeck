@@ -1,3 +1,4 @@
+const { outputLabels } = require('./i18n.cjs');
 const path=require('node:path');const {spawn}=require('node:child_process');const readline=require('node:readline');
 const {BrowserWindow,desktopCapturer,ipcMain,session,webContents,systemPreferences}=require('electron');
 const {findWindowSource}=require('./window-source.cjs');
@@ -35,7 +36,7 @@ class MirrorOutputs{
    window.on('page-title-updated',event=>event.preventDefault());
    window.webContents.setWindowOpenHandler(()=>({action:'deny'}));window.webContents.on('will-navigate',event=>event.preventDefault());
    window.on('closed',()=>{this.outputs.delete(id);if(!output.closing){const error=Error('PowerPoint izlaz je zatvoren.');output.reject(error);if(output.ready)this.onFailure(error);else this.failed(error);}});
-   loaded.push(window.loadFile(path.join(__dirname,'../ui/mirror.html'),{query:{native:native?'1':'0',role:target.role,language:plan.language}}));
+   loaded.push(window.loadFile(path.join(__dirname,'../ui/mirror.html'),{query:{native:native?'1':'0',role:target.role,...outputLabels(plan.language)}}));
   }
   // Independent renderers load together; every output must still become ready.
   await Promise.all(loaded);

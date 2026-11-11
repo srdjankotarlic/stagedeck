@@ -1,6 +1,3 @@
-import { translateDocument } from './i18n.js';
-translateDocument(new URLSearchParams(location.search).get('language'));
-window.output.onLanguage(translateDocument);
 const video=document.querySelector('video'),canvas=document.querySelector('canvas'),native=new URLSearchParams(location.search).get('native')==='1';let stream,stopping=false,decoding=false,pending,ready=false;
 if(native){
  canvas.hidden=false;
@@ -18,3 +15,12 @@ if(native){
 addEventListener('beforeunload',()=>{stopping=true;stream?.getTracks().forEach(t=>t.stop());});document.addEventListener('keydown',event=>{if(event.key==='Escape')window.output.stop();});
 
 let controlsTimer;document.addEventListener('mousemove',()=>{document.body.classList.add('controls-visible');clearTimeout(controlsTimer);controlsTimer=setTimeout(()=>document.body.classList.remove('controls-visible'),2200);});document.getElementById('show-controls').onclick=()=>window.output.controls();document.getElementById('close-output').onclick=()=>window.output.stop();
+
+function showLanguage({language,controls,close,title}){
+ document.documentElement.lang=language==='sr'?'sr-Latn':'en';
+ if(controls)document.getElementById('show-controls').textContent=controls;
+ if(close)document.getElementById('close-output').textContent=close;
+ if(title)document.title=title;
+}
+showLanguage(Object.fromEntries(new URLSearchParams(location.search)));
+window.output.onLanguage(showLanguage);
