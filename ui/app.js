@@ -22,7 +22,7 @@ function render(s) {
     $('setup-result').textContent = '';
   }
   document.documentElement.dataset.theme = s.theme;
-  document.querySelectorAll('[data-theme]').forEach(b => b.setAttribute('aria-pressed',b.dataset.theme === s.theme));
+  document.querySelectorAll('.theme-switch [data-theme]').forEach(b => b.setAttribute('aria-pressed',b.dataset.theme === s.theme));
   if(selected&&(selected.eventId!==s.current.id||!s.current.slots.some(slot=>slot?.id===selected.id)))selected=null;
   document.body.classList.toggle('has-live',!!s.live);
   document.body.classList.toggle('has-cue',!!selected);
@@ -75,7 +75,7 @@ $('language').onchange = () => command('language', { language: $('language').val
 $('close-setup').onclick = () => { command('setup-seen'); $('setup-dialog').close(); };
 $('setup-dialog').addEventListener('cancel',()=>command('setup-seen'));
 $('desktop-shortcut').onclick = async () => { const r=await command('desktop-shortcut'); $('setup-result').textContent=r.message || r.error; };
-document.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>command('theme',{theme:b.dataset.theme}));
+document.querySelectorAll('.theme-switch [data-theme]').forEach(b=>b.onclick=()=>command('theme',{theme:b.dataset.theme}));
 $('install-plugin').onclick = async () => { const r=await command('install-plugin'); $('setup-result').textContent=r.message || r.error; };
 $('import-profile').onclick = () => command('import-profile');
 $('copy-diagnostics').onclick = async () => { const r=await command('copy-diagnostics'); $('setup-result').textContent=r.message||r.error; };
