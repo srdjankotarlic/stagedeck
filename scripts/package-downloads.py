@@ -9,11 +9,15 @@ from pathlib import Path
 root = Path(__file__).resolve().parent.parent
 version = json.loads((root / "package.json").read_text())["version"]
 parser = argparse.ArgumentParser()
-parser.add_argument("--windows", type=Path, required=True)
-parser.add_argument("--windows-plugin", type=Path, required=True)
+parser.add_argument("--windows", type=Path)
+parser.add_argument("--windows-plugin", type=Path)
 parser.add_argument("--mac", type=Path)
 parser.add_argument("--destination", type=Path, required=True)
 args = parser.parse_args()
+if not (args.windows or args.mac):
+    parser.error("specify --windows or --mac")
+if args.windows and not args.windows_plugin:
+    parser.error("--windows-plugin is required with --windows")
 args.destination.mkdir(parents=True, exist_ok=True)
 
 
@@ -22,7 +26,7 @@ def sha(file):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
-packages = [("Windows", args.windows, "StageDeck-Setup.exe", args.windows_plugin)]
+packages = [("Windows", args.windows, "StageDeck-Setup.exe", args.windows_plugin)] if args.windows else []
 if args.mac:
     packages.append(("Mac", args.mac, "StageDeck.dmg", root / "release/mac-universal/StageDeck.app/Contents/Resources/installers"))
 for system, installer, name, plugins in packages:

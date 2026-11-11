@@ -38,6 +38,7 @@ const { _electron:electron,expect }=require('@playwright/test');const assert=req
   await page.reload();await page.waitForSelector('.slot');
   assert.deepEqual((await page.evaluate(()=>window.stage.getState())).routing.roles,roles);
   assert.equal((await page.evaluate(()=>window.stage.getState())).current.slots[0].keyLabel,'N23');
+  await page.setViewportSize({width:1060,height:760});
   const beforeLanguage=await page.evaluate(()=>window.stage.getState());
   assert.equal(beforeLanguage.language,'en','English defaults for a library without a language');
   await expect(page.locator('#screens')).toHaveText('Displays');
@@ -57,6 +58,7 @@ const { _electron:electron,expect }=require('@playwright/test');const assert=req
   await page.locator('#setup').click();await page.locator('#language').selectOption('en');
   await expect(page.locator('#setup-dialog h2')).toHaveText('Settings');
   await page.locator('#close-setup').click();await page.evaluate(()=>window.stage.command('dismiss-error'));
+  await page.setViewportSize({width:1430,height:940});
   await page.locator('#screens').click();await page.locator('#identify-displays').click();
   await expect.poll(async()=>(await app.windows()).filter(w=>w.url().includes('identify.html')).length).toBe(displayIds.length);const identified=(await app.windows()).filter(w=>w.url().includes('identify.html'));assert.equal(identified.length,displayIds.length);
   assert.deepEqual((await Promise.all(identified.map(w=>w.locator('#number').textContent()))).sort(),displayIds.map((_,i)=>String(i+1)));
