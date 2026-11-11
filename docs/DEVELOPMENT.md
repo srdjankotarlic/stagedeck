@@ -4,7 +4,7 @@ A local desktop presentation desk for Microsoft PowerPoint and PDFs, with an opt
 
 ## Monitor roles
 
-The Ekrani dialog lists connected displays by number, label, resolution and laptop status. A simultaneous identification overlay labels each physical display. Each of up to three monitors can independently be None/Controls, Notes or Slides. Explicit assignments persist. Repeated roles are supported, including all-notes or all-slides. Routing edits are blocked on air; missing assigned displays never cause an automatic fallback onto another monitor.
+The Displays dialog lists connected displays by number, label, resolution and laptop status. A simultaneous identification overlay labels each physical display. Each of up to three monitors can independently be Controls only, Presenter View or Slides. Explicit assignments persist. Repeated roles are supported, including all-notes or all-slides. Routing edits are blocked on air; missing assigned displays never cause an automatic fallback onto another monitor.
 
 On macOS, native PowerPoint continues rendering slides, embedded video, transitions and its own Presenter View. A bundled universal ScreenCaptureKit helper captures only the selected document's native windows. Frames are distributed locally to borderless monitor outputs, with fixed aspect ratio and complete monitor coverage. Native source windows remain on active output monitors underneath these outputs, where PowerPoint continues rendering. Unused native views can be placed off-screen; captured views are never moved off-screen, which would freeze PowerPoint rendering. The source placement is checked against control-only displays. Startup/switch/stop use black guards so a wrong native view does not flash onto an audience display. The desktop's main display and physical display layout remain unchanged. The CoreGraphics helper remains for recovery of an interrupted session from version 0.3.
 
@@ -24,7 +24,7 @@ Drop a file to use its filename as the presentation name. Click that name to edi
 
 The optional Elgato plugin receives generated key images and forwards stable slot indices over authenticated localhost WebSockets. The XL profile maps all 32 positions. The plugin and profile installers are included in both desktop installers. Installation is initiated through the official Elgato application. Existing profiles remain intact.
 
-Light/dark themes, events, watched folders, reorder/replace/remove/reveal and locked layouts remain available. Slots reference original source files. A second press closes that document and its outputs without closing unrelated presentations.
+The English/Serbian preference and light/dark themes are stored locally. New libraries default to English and dark. Events, watched folders, reorder/replace/remove/reveal and locked layouts remain available. Slots reference original source files. A second press closes that document and its outputs without closing unrelated presentations.
 
 ## Development
 
@@ -42,6 +42,7 @@ node scripts/check-role-layouts.cjs
 node scripts/check-media-and-recovery.cjs
 npm run build:mac
 npm run build:win
+node scripts/capture-screenshots.cjs # generated public demo files and isolated library
 ```
 
 The media test uses a generated `06 Video test.pptx` with embedded motion video. The native fixture is configured for autoplay with PowerPoint before that test. `check-role-layouts.cjs` exercises all 27 role combinations on three connected monitors with real PowerPoint, no Stream Deck peer, actual output-pixel changes after two advances, exact monitor bounds, source exclusion from control screens, on-air routing protection, complete document/output closure and unchanged display geometry. It writes `.test-output/role-matrix-report.json` and verified Notes/Slides screenshots. The UI smoke test covers selection/double-click/GO/stop, safe cueing while live, stale IDs, reorder/removal, the real Stream Deck bridge with hardware connected and disconnected, text fitting and GO visibility at minimum window size, roles/aliases/theme persistence, identification overlays, inline rename/cancel/reset, actual key preview, PDF navigation/close, thumbnails, reorder and lock. Unit tests cover all role combinations, disconnected-device rejection, source placement, library recovery/Unicode/overflow and plugin registration/images/commands/profile pages.

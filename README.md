@@ -1,48 +1,88 @@
-# StageDeck
+# StageDeck — PowerPoint and PDF presentation launcher for Stream Deck XL
 
-PowerPoint i PDF prezentacije na jednom mestu. Kontrola iz aplikacije ili sa svih 32 tastera na Elgato Stream Deck XL-u. Radi lokalno, bez naloga i bez interneta tokom događaja.
+StageDeck is a desktop presentation cue desk for Windows and macOS. Load a run
+of PowerPoint and PDF files before the event, give each presentation a key, and
+start the right file without searching through folders in front of the audience.
+Use it with an Elgato Stream Deck XL or run the whole show with your mouse.
 
-## Preuzmi
+[**Download for Windows**](https://github.com/srdjankotarlic/stagedeck/releases/latest/download/StageDeck-Windows.zip) ·
+[**Download for Mac**](https://github.com/srdjankotarlic/stagedeck/releases/latest/download/StageDeck-Mac.zip) ·
+[Website](https://srdjankotarlic.github.io/stagedeck/) ·
+[Installation guide](INSTALL.md) · [Uputstvo na srpskom](INSTALL-SR.md)
 
-**Windows 0.5.6:** provereno otvaranje i potpuno zatvaranje PowerPoint prozora na stvarnom Windows računaru, sa fizičkim Stream Deck XL-om. Mac paket ostaje proverena verzija **0.5.1**.
+![StageDeck dark theme with PowerPoint and PDF thumbnails on a 32-slot presentation grid](docs/media/stage-deck-powerpoint-pdf-grid.webp)
 
-| Računar | Kompletan paket | Šta pokrenuti posle raspakivanja |
+## Run the show
+
+1. **Load your event.** Drag PowerPoint or PDF files into the 32-slot grid, or
+   link a folder to pick up new files. StageDeck uses the filename and generates
+   a preview where available. Drag slots to reorder them; lock the layout when
+   you're ready. Keep separate events for different rooms or shows.
+2. **Assign displays.** Identify up to three connected displays. For each one,
+   choose **Controls only**, **Presenter View** for PowerPoint notes, or
+   **Slides** for the audience. The same output can appear on multiple displays.
+   PDF playback uses the Slides assignments and needs no Office installation.
+3. **Cue and go.** Click a thumbnail to select it, then press **GO**. Clicking
+   or double-clicking a card alone won't put it live. Use the slide controls
+   to navigate and **Close** to clear the show. The active slot is marked red.
+4. **Or press a Stream Deck key.** The first press opens the presentation; the
+   second closes it and its output. StageDeck does not close other PowerPoint
+   documents. Live keys turn red.
+
+| Click a cue, then press GO | Assign presenter notes and audience slides |
+| --- | --- |
+| ![Selected opening keynote with an explicit GO button](docs/media/cue-presentation-with-go.webp) | ![Display routing with an Identify displays button and separate Presenter View and Slides roles](docs/media/powerpoint-presenter-view-display-routing.webp) |
+| **Live status and navigation** | **Fullscreen PDF output** |
+| ![Red LIVE indication and previous, next and close controls in StageDeck](docs/media/live-status-and-slide-controls.webp) | ![Demo event agenda PDF projected fullscreen on the slides output](docs/media/fullscreen-pdf-slides.webp) |
+
+| PowerPoint Presenter View | Fullscreen PowerPoint audience output |
+| --- | --- |
+| ![Native PowerPoint Presenter View with current slide, next slide and speaker notes on the presenter display](docs/media/native-powerpoint-presenter-view.webp) | ![The same PowerPoint keynote slide fullscreen on the separate audience display](docs/media/fullscreen-powerpoint-slides.webp) |
+
+## Set up Elgato Stream Deck XL
+
+1. Install the Elgato Stream Deck desktop app. Open StageDeck's **Settings** and
+   choose **Install plugin**. Approve the install in Elgato.
+2. Select the bundled **StageDeck XL** profile. If it doesn't appear, use
+   **Import profile** in StageDeck. The profile maps all 32 physical positions.
+3. In StageDeck, click the keyboard icon on a card to set a short key label,
+   such as `KEYNOTE` or `N23`, without changing the presentation's full name.
+   Choose **Text only** for large labels or **Image + text** for a slide preview
+   with the label. The editor shows what will appear on the key.
+4. Keep both desktop apps running. Press a key to start, look for its red
+   **LIVE** state, and press it again to end that presentation.
+
+| Plugin and XL profile setup | Edit a key without renaming the presentation |
+| --- | --- |
+| ![Settings with Install plugin and Import profile for Elgato Stream Deck](docs/media/elgato-stream-deck-plugin-setup.webp) | ![Stream Deck key editor showing a large KEYNOTE label on the actual key preview](docs/media/stream-deck-xl-key-label.webp) |
+
+## Language and appearance
+
+English is the default. Switch to Serbian (Latin script) under
+**Settings → Language**. A new installation starts in dark mode; choose **Light**
+in the sidebar if you prefer it. StageDeck saves both choices. Presentation
+names, key labels, folder links, and display assignments stay as entered.
+
+| Light theme | Serbian interface |
+| --- | --- |
+| ![StageDeck in the optional light theme](docs/media/stage-deck-light-theme.webp) | ![StageDeck with menus and controls in Serbian](docs/media/stage-deck-serbian-interface.webp) |
+
+## Requirements and downloads
+
+| | Requirements | Installation |
 | --- | --- | --- |
-| **Windows 10 / 11 · 64-bit** | **[PREUZMI WINDOWS](https://github.com/srdjankotarlic/stagedeck/releases/latest/download/StageDeck-Windows.zip)** | `INSTALIRAJ SVE.cmd` u raspakovanom folderu |
-| **Mac · Intel i Apple Silicon** | **[PREUZMI MAC](https://github.com/srdjankotarlic/stagedeck/releases/latest/download/StageDeck-Mac.zip)** | `StageDeck-Mac/StageDeck.dmg` |
+| **Windows** | Windows 10/11 x64 | Extract the ZIP, run `Install-StageDeck.cmd` for the app and plugin, or run `StageDeck-Setup.exe` to install the app manually. |
+| **macOS** | macOS 13 or later, Intel or Apple Silicon | Extract the ZIP, open `StageDeck.dmg`, then drag the app into Applications. See the [Mac permissions and installation notes](INSTALL.md). |
+| **PowerPoint** | Microsoft PowerPoint desktop app | PowerPoint renders the original slides and Presenter View. PDFs play without Office. |
+| **Stream Deck XL** | Optional; Elgato Stream Deck 6.6 or later | Both downloads include the plugin and XL profile. |
 
-**[Sva izdanja i datoteke →](https://github.com/srdjankotarlic/stagedeck/releases)**
+StageDeck and the plugin work locally, without an account. Check your exact
+Office build, monitor arrangement, and presentations before going on air.
+See the [verification notes](docs/VERIFICATION.md) for tested configurations,
+the [release history](https://github.com/srdjankotarlic/stagedeck/releases) for
+previous installers, and the [developer guide](docs/DEVELOPMENT.md) for source
+and build instructions.
 
-Svaki ZIP sadrži aplikaciju, Elgato dodatak, XL profil i kratko uputstvo. Za korišćenje instalacije preuzmi gornji paket; GitHub dugme „Code → Download ZIP“ preuzima razvojni kod.
-
-Windows 0.5.6 je instaliran i proveren na Windows 11 sa desktop PowerPointom 2010 x64, dva fizička monitora i fizičkim Stream Deck XL-om. Provereni su crveni LIVE, oba pritiska istog tastera, potpuno zatvaranje svih prozora i ponovno otvaranje. Drugi računari i Office verzije zahtevaju svoju proveru; [ovde su merenja i granice provere](docs/VERIFICATION.md). Mac paket nije menjan.
-
-## Instalacija
-
-1. Preuzmi paket za svoj sistem i raspakuj ZIP.
-2. Windows: pokreni `INSTALIRAJ SVE.cmd` za aplikaciju i Windows Elgato dodatak. Mac: otvori `StageDeck.dmg` i prevuci StageDeck u Applications.
-3. Pokreni StageDeck sa desktop ikonice ili iz Applications / Start menija.
-4. Za Stream Deck: instaliraj zvaničnu Elgato aplikaciju. U StageDecku otvori **Podešavanja → Instaliraj dodatak**, zatim uvezi **StageDeck XL profil**. Isti fajlovi su u folderu `Elgato` unutar preuzetog paketa. Postojeći Elgato profili ostaju sačuvani.
-
-Za PowerPoint fajlove potreban je instaliran desktop Microsoft PowerPoint. Cilj za Windows je Microsoft 365 / PowerPoint 2021 ili noviji. PDF radi bez PowerPointa. Mac zahteva macOS 13 ili noviji i pri prvoj instalaciji traži dozvole za kontrolu PowerPointa i lokalni prikaz njegovih prozora. Ova izdanja nemaju Apple notarizaciju / komercijalni Windows potpis; [detalji instalacije i dozvola](INSTALL-SR.md).
-
-## Rad
-
-- Prevuci prezentacije u mrežu; naziv se preuzima iz fajla.
-- Klik na sliku bira prezentaciju. **GO** je pokreće. **Zatvori** potpuno zatvara njen prikaz i dokument.
-- Na Stream Decku isti taster pokreće i zatvara prezentaciju.
-- Klik na naziv menja ime u aplikaciji. **Natpis** podešava poseban, krupan naziv na Stream Decku, veličinu slova i prikaz sa slikom ili samo tekstom.
-- **Ekrani** identifikuje do tri monitora. Svakom dodeli **Samo kontrole**, **Notes** ili **Slajdovi**. Ista uloga može biti na više ekrana.
-- Dostupne su svetla i tamna tema. Stream Deck je opcioni.
-
-Beleške dolaze iz izvornog PowerPoint Presenter Viewa; animacije i video ostaju u PowerPointu. PDF se prikazuje na Slajdovi ekranima. Originalni dokumenti se ne preimenuju.
-
-## Pouzdanost i brzina
-
-Provere spremnosti i bezbednog rasporeda izlaza ostaju uključene. Ne koristimo prečice koje preskaču proveru prikaza. U 0.5.1 izlazi se pripremaju paralelno; u lokalnom testu PDF na tri ekrana otvarao se približno **14% brže**. Vreme otvaranja PowerPointa u istom testu ostalo je približno isto. [Merenja i granice provere](docs/VERIFICATION.md).
-
-[![Windows verification](https://github.com/srdjankotarlic/stagedeck/actions/workflows/verify.yml/badge.svg)](https://github.com/srdjankotarlic/stagedeck/actions/workflows/verify.yml)
-
-## Razvoj
-
-[Tehnički opis, testovi i pravljenje paketa](docs/DEVELOPMENT.md) · [Uputstvo](INSTALL-SR.md) · [MIT licenca](LICENSE)
+[Report an issue](https://github.com/srdjankotarlic/stagedeck/issues/new) ·
+[MIT license](LICENSE). StageDeck is an independent project and is not affiliated
+with Microsoft or Elgato.
