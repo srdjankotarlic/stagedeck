@@ -1,7 +1,7 @@
 {
   "name": "stage-deck",
   "productName": "StageDeck",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "description": "PowerPoint presentation desk for Stream Deck XL",
   "main": "src/main.cjs",
   "author": "StageDeck",
@@ -43,7 +43,14 @@
       {
         "from": "dist",
         "to": "installers",
-        "filter": ["*.streamDeckPlugin", "*.streamDeckProfile"]
+        "filter": [
+          "*.streamDeckPlugin",
+          "*.streamDeckProfile"
+        ]
+      },
+      {
+        "from": "INSTALL.md",
+        "to": "Start Here.md"
       },
       {
         "from": "INSTALL-SR.md",

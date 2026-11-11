@@ -4,7 +4,7 @@ const crypto = require('node:crypto');
 const EXTENSIONS = new Set(['.pptx', '.ppt', '.ppsx', '.pps', '.pptm', '.pdf']);
 const SUPPORTED = /\.(pptx?|ppsx?|pptm|pdf)$/i;
 
-function makeEvent(name = 'Moj događaj') {
+function makeEvent(name = 'My event') {
   return { id: crypto.randomUUID(), name, slots: Array(32).fill(null), folder: '', locked: false };
 }
 function loadLibrary(file) {

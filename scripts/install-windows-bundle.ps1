@@ -1,6 +1,6 @@
 param([string]$StageDeckAppData=$env:APPDATA,[switch]$NoPause)
 $ErrorActionPreference='Stop'
-$expected='0.5.6'
+$expected='0.5.7'
 $identity=[Security.Principal.WindowsIdentity]::GetCurrent()
 $principal=New-Object Security.Principal.WindowsPrincipal($identity)
 if(-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){
@@ -11,7 +11,7 @@ if(-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrat
   exit $elevated.ExitCode
 }
 try {
-  Write-Host 'StageDeck 0.5.6 - instalacija aplikacije i Windows dodatka'
+  Write-Host 'StageDeck 0.5.7 - instalacija aplikacije i Windows dodatka'
   $setup=Join-Path $PSScriptRoot 'StageDeck-Setup.exe'
   $archive=Join-Path $PSScriptRoot 'Elgato\com.stagedeck.presentations.streamDeckPlugin'
   if(-not (Test-Path -LiteralPath $setup) -or -not (Test-Path -LiteralPath $archive)){throw 'Raspakuj kompletan StageDeck Windows folder pre pokretanja.'}
@@ -48,7 +48,7 @@ try {
   $installedHash=(Get-FileHash -LiteralPath (Join-Path $plugin 'windows\StageDeckPlugin.exe')).Hash
   if($sourceHash -ne $installedHash){throw 'Dodatak nije zamenjen. Zatvori Stream Deck potpuno i ponovi.'}
   @{time=[DateTime]::UtcNow.ToString('o');appVersion=$version;appPath=$executable;pluginVersion=$manifest.Version;pluginHash=$installedHash;pluginPath=$plugin;backup=$backup;profilesPreserved=$true}|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $PSScriptRoot 'Instalacija-izvestaj.json') -Encoding UTF8
-  Write-Host 'GOTOVO: StageDeck i dodatak su 0.5.6, verzije i fajlovi su provereni.' -ForegroundColor Green
+  Write-Host 'GOTOVO: StageDeck i dodatak su 0.5.7, verzije i fajlovi su provereni.' -ForegroundColor Green
   Write-Host 'Zatvori ovaj prozor. Pokreni StageDeck i Stream Deck preko njihovih ikonica (u uobicajenom korisnickom rezimu).'
   Write-Host 'U Stream Decku izaberi StageDeck XL profil. Ako se ne ponudi automatski, uvezi ga iz foldera Elgato.'
   if(-not $NoPause){Read-Host 'Enter za kraj'|Out-Null}

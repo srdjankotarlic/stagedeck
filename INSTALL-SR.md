@@ -30,7 +30,7 @@ Puni naziv prezentacije u aplikaciji ostaje sačuvan. Natpis se odmah prikazuje 
 Originalni fajl se ne preimenuje. Zaključan raspored moraš otključati za izmene.
 
 MAC INSTALACIJA I DOZVOLE
-Otvori StageDeck-0.5.1-mac-universal.dmg i prevuci StageDeck u Applications.
+Otvori StageDeck.dmg i prevuci StageDeck u Applications.
 Paket podržava Intel i Apple Silicon uz macOS 13 ili noviji; razvojni alati nisu potrebni.
 Ikonica se pravi i na radnoj površini. Svetla/tamna tema biraju se dole levo.
 Za kontrolu PowerPointa potrebni su Automation i Accessibility. Za raspoređivanje živih PowerPoint prikaza potrebna je dozvola za StageDeck u System Settings → Privacy & Security → Screen & System Audio Recording (na starijim sistemima Screen Recording).
@@ -38,7 +38,7 @@ Kopiraju se isključivo prozori izabranog PowerPoint dokumenta. Slike ostaju lok
 Mac izdanje koristi stalan lokalni sertifikat za potpisivanje. Buduće verzije koriste isti identitet, da svaka izmena ne bi poništavala dozvole. Sertifikat nije sistemski instaliran kao pouzdan koren i izdanje nema Apple Developer ID/notarizaciju. Prva instalacija i dalje zahteva standardna macOS odobrenja.
 
 WINDOWS
-Pokreni StageDeck-0.5.6-Windows-Setup.exe (u kompletnom folderu: StageDeck-Setup.exe). Instalacija pravi desktop i Start meni prečice.
+Pokreni Install-StageDeck.cmd (ili StageDeck-Setup.exe za ručnu instalaciju). Instalacija pravi desktop i Start meni prečice.
 Potreban je Windows 10/11 x64 i desktop Microsoft PowerPoint. Windows PowerShell se koristi za COM integraciju.
 Windows 0.5.2 čeka spremnost Presenter View prozora do 15 sekundi, proverava položaje izvornih prozora i ponavlja Office pozive kada je PowerPoint zauzet. Negativni 32-bitni HWND identifikatori pravilno se povezuju sa Windows izlazom. Ako se greška ponovi, Podešavanja → Kopiraj detalje kopira fazu greške, Office odgovor i stanje dodatka; token veze se ne kopira.
 Windows 0.5.6 podržava i Office COM objekte koji nemaju HWND svojstvo: stvarni prozori se povezuju sa izabranim dokumentom i geometrijom slideshowa. Na Windows 11 23H2 računaru sa dva 1920×1080 monitora potvrđeni su PowerPoint 2010 x64, slajdovi, izvorni Presenter View sa beleškama, navigacija i potpuno zatvaranje. Ovo ne potvrđuje druge Office verzije, druga skaliranja ili firmin laptop; pre događaja proveri isti paket na tom računaru.
@@ -56,3 +56,6 @@ PODACI I PROVERA
 Postojeće prezentacije, nazivi i raspored ostaju u StageDeck folderu u Application Support (Mac) ili APPDATA (Windows).
 LIVE potvrđuje aktivnu PowerPoint prezentaciju i spremne izlaze u aplikaciji; ne proverava izlaz eksternog video miksera.
 Na ovom Macu provereno je svih 27 izbora za tri priključena monitora: 26 aktivnih rasporeda i odbijanje rasporeda bez izlaza. Proverene su promene stvarnih kadrova na izlazima i potpuno zatvaranje. Izveštaj je u role-matrix-report.json.
+
+JEZIK
+Engleski je podrazumevan. U Settings → Language izaberi Srpski. Izbor se pamti i ne menja tvoje nazive, prezentacije ili raspored.

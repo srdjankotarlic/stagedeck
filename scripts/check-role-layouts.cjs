@@ -15,9 +15,9 @@ const allCases=()=>rolesList.flatMap(a=>rolesList.flatMap(b=>rolesList.map(c=>[a
    await page.evaluate(()=>window.stage.command('dismiss-error'));
    await page.locator('[data-index="0"] .slot-trigger').click();await page.locator('#go').click();
    await waitState(s=>!s.busy&&(!!s.live||!!s.lastError));
-   if(roles.every(r=>r==='none'))await waitState(s=>!s.busy&&s.lastError.includes('bar jedan'));
+   if(roles.every(r=>r==='none'))await waitState(s=>!s.busy&&s.lastError.includes('at least one'));
    let state=await page.evaluate(()=>window.stage.getState());
-   if(roles.every(r=>r==='none')){assert.equal(state.live,null);assert.match(state.lastError,/bar jedan/);await page.evaluate(()=>window.stage.command('dismiss-error'));report.push({roles,result:'rejected-empty'});console.log('PASS none/none/none: no output started');continue;}
+   if(roles.every(r=>r==='none')){assert.equal(state.live,null);assert.match(state.lastError,/at least one/);await page.evaluate(()=>window.stage.command('dismiss-error'));report.push({roles,result:'rejected-empty'});console.log('PASS none/none/none: no output started');continue;}
    assert.ok(state.live,roles.join('/')+': '+state.lastError);
    const expected=roles.filter(r=>r!=='none').length;assert.equal(state.routing.mirrors.length,expected);
    for(const mirror of state.routing.mirrors){assert.ok(mirror.ready);assert.equal(assignments[mirror.displayId],mirror.role);assert.ok(mirror.dimensions.width>0&&mirror.dimensions.height>0);}

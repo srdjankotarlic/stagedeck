@@ -36,3 +36,4 @@ dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);bo
 .transport-dock .cue-panel{position:static;margin-top:0}
 .transport-dock .live-panel{margin-top:0}.transport-dock .cue-panel:not([hidden])+.live-panel:not([hidden]){margin-top:8px}
 .slot-info{flex:0 0 auto;min-height:82px}.slot-name{height:30px;min-height:30px;flex-shrink:0}.slot-preview{padding:14px 6px 6px}
+#language{padding:7px 10px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--text)}

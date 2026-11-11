@@ -15,6 +15,10 @@ const { planDisplays } = require('./displays.cjs');
 const { rolePlan,validateRoles } = require('./role-plan.cjs');
 const { placeSource } = require('./source-placement.cjs');
 const { MirrorOutputs } = require('./mirror-outputs.cjs');
+const { languageOf, text, localMessage, localResult } = require('./i18n.cjs');
+const language = () => languageOf(library.language);
+const t = (key, values) => text(language(), key, values);
+const presentMessage = value => localMessage(language(), value);
 app.setName('StageDeck');
 app.setPath('userData', process.env.STAGEDECK_TEST_DATA || path.join(app.getPath('appData'), 'StageDeck'));
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -87,14 +91,14 @@ async function restoreProjection(){
 }
 function state() {
   return {
-    name: 'StageDeck', version: app.getVersion(), platform: process.platform, theme: library.theme || 'light',
+    name: 'StageDeck', version: app.getVersion(), platform: process.platform, theme: library.theme || 'light', language: language(),
     routing: { controlId: appControlId(), notesIds:outputPlan().notes.map(d=>d.id), slidesIds:outputPlan().slides.map(d=>d.id), audienceId:displayPlan().audience.id, separate:displayPlan().separate, roles:outputPlan().assignments, missing:outputPlan().missing, custom:!!library.displayRoles, mirrors:mirrors?.snapshot()||[], captureAllowed:process.platform!=='darwin'||systemPreferences.getMediaAccessStatus('screen')==='granted' },
     firstRun: !library.setupSeen,
     events: library.events.map(e => ({ id: e.id, name: e.name })),
-    current: { ...event(), slots: event().slots.map(s => s ? { ...s, missing: !fs.existsSync(s.path), error: errors.get(s.id) || '' } : null) },
-    live, busy, loading, lastError, pptError,
+    current: { ...event(), slots: event().slots.map(s => s ? { ...s, missing: !fs.existsSync(s.path), error: presentMessage(errors.get(s.id) || '') } : null) },
+    live, busy, loading, lastError: presentMessage(lastError), pptError: presentMessage(pptError),
     devices: [...devices.values()],
-    displays: screen.getAllDisplays().map((d,i) => ({ id: d.id, label: d.label || `Ekran ${i + 1}`, width: d.size.width, height: d.size.height, bounds: d.bounds, internal: d.internal, primary: d.id === screen.getPrimaryDisplay().id })),
+    displays: screen.getAllDisplays().map((d,i) => ({ id: d.id, label: d.label || t('Ekran {number}',{number:i+1}), width: d.size.width, height: d.size.height, bounds: d.bounds, internal: d.internal, primary: d.id === screen.getPrimaryDisplay().id })),
     displayId: library.displayId,
     bridge: { connected: devices.size > 0, port: bridgePort }
   };
@@ -209,7 +213,7 @@ async function toggle(index) {
         const win=new BrowserWindow({...display.bounds,fullscreen:true,backgroundColor:'#000000',autoHideMenuBar:true,title:slot.name,webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
         pdfWindows.add(win);pdfWindow ||= win;
         win.on('closed',()=>{if(pdfWindows.delete(win)&&live?.id===slot.id)command('stop');});
-        loaded.push(win.loadFile(path.join(__dirname,'../ui/pdf.html'),{query:{id:slot.id}}));
+        loaded.push(win.loadFile(path.join(__dirname,'../ui/pdf.html'),{query:{id:slot.id,language:language()}}));
       }
       await Promise.all(loaded);
     } else {
@@ -220,7 +224,7 @@ async function toggle(index) {
         while(Date.now()<deadline){const layout=await ppt.execute('layout',slot.path);if((!wanted.notes.length||layout.windows.some(w=>w.buttons>=4))&&(!wanted.slides.length||layout.windows.some(w=>w.buttons===0))){ready=true;break;}await new Promise(resolve=>setTimeout(resolve,200));}
         if(!ready)throw Error('PowerPoint prikaz još nije spreman. Proveri dijaloge u PowerPointu pa ponovi GO.');
       }
-      await mirrors.start(slot.path,{...outputPlan(),mirrorAll:true},started.handles||{});
+      await mirrors.start(slot.path,{...outputPlan(),mirrorAll:true,language:language()},started.handles||{});
       if(process.platform==='darwin')await coverNativeSources(slot.path);
       const result = await ppt.execute('status');
       const match = (result.windows || []).find(w => samePath(w.path, slot.path));
@@ -274,7 +278,7 @@ async function command(name, payload = {}) {
         busy = true; try { await stopLive(); } finally { busy = false; publish(); } return { ok: true };
       }
       case 'pick-files': {
-        assertEditable(); const result = await dialog.showOpenDialog(mainWindow, { properties: ['openFile', 'multiSelections'], filters: [{ name: 'Prezentacije', extensions: ['pptx','ppt','ppsx','pps','pptm','pdf'] }] });
+        assertEditable(); const result = await dialog.showOpenDialog(mainWindow, { properties: ['openFile', 'multiSelections'], filters: [{ name: t('Prezentacije'), extensions: ['pptx','ppt','ppsx','pps','pptm','pdf'] }] });
         return result.canceled ? { ok: true } : await addFiles(result.filePaths, payload.index);
       }
       case 'import': assertEditable(); return await addFiles(payload.paths || [], payload.index);
@@ -333,7 +337,7 @@ async function command(name, payload = {}) {
         assertEditable(); const index = payload.index; const old = event().slots[index];
         if (!old) throw Error('Izaberi postojeću prezentaciju.');
         if (old.id === live?.id) throw Error('Prvo zatvori aktivnu prezentaciju.');
-        const result = await dialog.showOpenDialog(mainWindow, { properties: ['openFile'], filters: [{ name: 'Prezentacije', extensions: ['pptx','ppt','ppsx','pps','pptm','pdf'] }] });
+        const result = await dialog.showOpenDialog(mainWindow, { properties: ['openFile'], filters: [{ name: t('Prezentacije'), extensions: ['pptx','ppt','ppsx','pps','pptm','pdf'] }] });
         if (result.canceled) return { ok: true };
         if (event().slots.some((s,i) => i !== index && s && samePath(s.path, result.filePaths[0]))) throw Error('Ta prezentacija je već na drugom tasteru. Prevuci postojeći taster na željeno mesto.');
         event().slots[index] = null;
@@ -342,13 +346,20 @@ async function command(name, payload = {}) {
       case 'reveal': { const slot = event().slots[payload.index]; if (slot) shell.showItemInFolder(slot.path); break; }
       case 'event-new': {
         if (live || busy) throw Error('Prvo zatvori aktivnu prezentaciju.');
-        const item = makeEvent(String(payload.name || 'Novi događaj').trim().slice(0,100)); library.events.push(item); library.currentEvent = item.id; persist(); break;
+        const item = makeEvent(String(payload.name || t('Novi događaj')).trim().slice(0,100)); library.events.push(item); library.currentEvent = item.id; persist(); break;
       }
       case 'event-switch': {
         if (live || busy) throw Error('Prvo zatvori aktivnu prezentaciju.');
         if (library.events.some(e => e.id === payload.id)) library.currentEvent = payload.id; persist(); break;
       }
       case 'event-rename': if (typeof payload.name === 'string' && payload.name.trim()) { event().name = payload.name.trim().slice(0,100); persist(); } break;
+      case 'language':
+        if (!['en','sr'].includes(payload.language)) throw Error('Nepostojeći jezik.');
+        library.language = payload.language; persist(); refreshMenu();
+        for (const {window} of mirrors?.outputs.values() || []) {
+          if (!window.isDestroyed()) window.webContents.send('output:language', language());
+        }
+        break;
       case 'theme':
         if (!['light','dark'].includes(payload.theme)) throw Error('Nepostojeća tema.');
         library.theme = payload.theme; nativeTheme.themeSource = payload.theme;
@@ -400,7 +411,7 @@ async function identifyDisplays(){
   const win=new BrowserWindow({x:display.bounds.x+Math.round((display.bounds.width-340)/2),y:display.bounds.y+Math.round((display.bounds.height-180)/2),width:340,height:180,frame:false,alwaysOnTop:true,skipTaskbar:true,focusable:false,show:false,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true}});
   identificationWindows.add(win);return {win,display,number:i+1};
  });
- await Promise.all(windows.map(({win,display,number})=>win.loadFile(path.join(__dirname,'../ui/identify.html'),{query:{number:String(number),label:display.label||'Ekran'}})));
+ await Promise.all(windows.map(({win,display,number})=>win.loadFile(path.join(__dirname,'../ui/identify.html'),{query:{number:String(number),label:display.label||t('Ekran'),language:language()}})));
  for(const {win} of windows)win.showInactive();
  setTimeout(()=>{for(const {win} of windows){identificationWindows.delete(win);if(!win.isDestroyed())win.destroy();}},2500).unref();
  return {ok:true};
@@ -443,7 +454,7 @@ async function bridge() {
         if (message.type === 'hello') { devices.set(id, { name: 'Stream Deck', devices: message.devices || [] }); publish(); }
         else if (message.type === 'command' && ['toggle','next','previous','stop'].includes(message.command)) {
           const result = await command(message.command, message.payload);
-          if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: 'result', id: message.id, ...result }));
+          if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: 'result', id: message.id, ...localResult(language(),result) }));
         }
       } catch { /* Ignore invalid local protocol frames. */ }
     });
@@ -471,12 +482,21 @@ async function watchTick() {
   } catch { /* Existing slots retain missing-file indications. */ }
   finally { watching = false; }
 }
+function refreshMenu() {
+  const namedRole = (role, label) => ({ role, label: t(label) });
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    ...(process.platform === 'darwin' ? [{ label: 'StageDeck', submenu: [namedRole('about','O aplikaciji StageDeck'), { type: 'separator' }, namedRole('hide','Sakrij StageDeck'), namedRole('quit','Zatvori StageDeck')] }] : []),
+    { label: t('Prezentacije'), submenu: [{ label: t('Dodaj prezentacije…'), accelerator: 'CmdOrCtrl+O', click: () => command('pick-files') }, { label: t('Zatvori prikaz'), click: () => command('stop') }] },
+    { label: t('Uređivanje'), submenu: [namedRole('undo','Opozovi'), namedRole('redo','Ponovi'), { type: 'separator' }, namedRole('cut','Iseci'), namedRole('copy','Kopiraj'), namedRole('paste','Nalepi'), namedRole('selectAll','Izaberi sve')] },
+    { label: t('Prikaz'), submenu: [namedRole('reload','Osveži'), namedRole('toggleDevTools','Alati za razvoj')] }
+  ]));
+}
 app.whenReady().then(async () => {
   libraryFile = path.join(app.getPath('userData'), 'library.json');
   library = loadLibrary(libraryFile); library.theme ||= 'light'; nativeTheme.themeSource = library.theme; persist();
   ipcMain.handle('state', () => state());
-  ipcMain.handle('command', (_, name, payload) => command(name,payload));
-  ipcMain.handle('pdf:read', async (_, id) => { const slot = findSlot(id); if (!slot || slot.kind !== 'pdf') throw Error('PDF nije pronađen.'); return fs.promises.readFile(slot.path); });
+  ipcMain.handle('command', async (_, name, payload) => localResult(language(), await command(name,payload)));
+  ipcMain.handle('pdf:read', async (_, id) => { const slot = findSlot(id); if (!slot || slot.kind !== 'pdf') throw Error(presentMessage('PDF nije pronađen.')); return fs.promises.readFile(slot.path); });
   ipcMain.handle('pdf:thumbnail', (_, id, data, total) => {
     const slot = findSlot(id);
     if (slot?.kind === 'pdf' && typeof data === 'string' && data.startsWith('data:image/png;base64,') && data.length < 1500000 && Number.isInteger(total) && total > 0) { slot.thumbnail = data; slot.slides = total; if (live?.id === slot.id) live.total = total; persist(); publish(); }
@@ -487,12 +507,7 @@ app.whenReady().then(async () => {
     const slot=findSlot(live.id);for(const win of pdfWindows)if(!win.isDestroyed())win.destroy();pdfWindows.clear();pdfWindow=null;live=null;
     fail(Error('PDF nije moguće prikazati: ' + String(message).slice(0,300)), slot);
   });
-  Menu.setApplicationMenu(Menu.buildFromTemplate([
-    ...(process.platform === 'darwin' ? [{ label: 'StageDeck', submenu: [{ role: 'about' }, { type: 'separator' }, { role: 'hide' }, { role: 'quit' }] }] : []),
-    { label: 'Prezentacije', submenu: [{ label: 'Dodaj prezentacije…', accelerator: 'CmdOrCtrl+O', click: () => command('pick-files') }, { label: 'Zatvori prikaz', click: () => command('stop') }] },
-    { label: 'Uređivanje', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
-    { label: 'Prikaz', submenu: [{ role: 'reload' }, { role: 'toggleDevTools' }] }
-  ]));
+  refreshMenu();
   if (process.platform==='darwin' && fs.existsSync(displayRecovery())) await macDisplays('restore');
   mirrors=new MirrorOutputs(async error=>{lastError=error.message;if(!busy){busy=true;try{await stopLive();}catch(e){lastError+=' '+e.message;}finally{busy=false;publish();}}else publish();});
   ipcMain.on('output:stop',event=>{if(mirrors.outputs.has(event.sender.id))command('stop');});

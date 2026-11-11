@@ -1,17 +1,26 @@
 import { renderKeys,renderKey } from './keys.js';
+import { text, translateDocument } from './i18n.js';
+let language;
+const t = (key, values) => text(language, key, values);
 let state, dragIndex = null, menuIndex = null, nameAction = null, lastMarkup = '', toastTimer, editing = null, keyEdit = null, previewGeneration = 0, monitorMarkup = '', selected = null, goPending = false;
 const $ = id => document.getElementById(id);
 const icon = name => `<img class="icon" src="../assets/icons/${name}.svg" alt="">`;
 const escape = value => String(value ?? '').replace(/[&<>"']/g,c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function command(name, payload) {
   const result = await window.stage.command(name,payload);
-  if (result?.skipped) toast(`${result.count} dodato. Još ${result.skipped} fajlova nema slobodan taster.`);
+  if (result?.skipped) toast(t('{count} dodato. Još {skipped} fajlova nema slobodan taster.', result));
   return result;
 }
 function toast(text) { $('toast').textContent = text; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 4500); }
 function openName(title, value, callback) { $('name-heading').textContent = title; $('name-input').value = value; nameAction = callback; $('name-dialog').showModal(); $('name-input').focus(); $('name-input').select(); }
 function render(s) {
   state = s;
+  if (language !== s.language) {
+    language = s.language;
+    translateDocument(language);
+    $('language').value = language;
+    $('setup-result').textContent = '';
+  }
   document.documentElement.dataset.theme = s.theme;
   document.querySelectorAll('[data-theme]').forEach(b => b.setAttribute('aria-pressed',b.dataset.theme === s.theme));
   if(selected&&(selected.eventId!==s.current.id||!s.current.slots.some(slot=>slot?.id===selected.id)))selected=null;
@@ -20,24 +29,23 @@ function render(s) {
   $('event-name').textContent = s.current.name;
   $('events').innerHTML = s.events.map(e => `<button class="event ${e.id === s.current.id ? 'active' : ''}" data-event="${e.id}" title="${escape(e.name)}">${icon('folder')}<span>${escape(e.name)}</span></button>`).join('');
   $('count').textContent = `${s.current.slots.filter(Boolean).length} / 32`;
-  $('lock').innerHTML = icon(s.current.locked ? 'lock' : 'lock-open') + (s.current.locked ? ' Zaključano' : ' Otključano');
+  $('lock').innerHTML = icon(s.current.locked ? 'lock' : 'lock-open') + ' ' + t(s.current.locked ? 'Zaključano' : 'Otključano');
   $('lock').classList.toggle('locked',s.current.locked); $('lock').setAttribute('aria-pressed',s.current.locked);
   $('add-files').disabled = s.current.locked; $('watch-folder').disabled = s.current.locked;
   const markup = s.current.slots.map((slot,index) => {
     const number = String(index+1).padStart(2,'0');
-    if (!slot) return `<button class="slot empty" data-index="${index}" aria-label="Taster ${index+1}: dodaj prezentaciju"><span class="slot-number">${number}</span><img class="empty-plus" src="../assets/icons/plus.svg" alt=""><span class="empty-label">Dodaj prezentaciju</span></button>`;
+    if (!slot) return `<button class="slot empty" data-index="${index}" aria-label="${t('Taster {number}: dodaj prezentaciju',{number:index+1})}"><span class="slot-number">${number}</span><img class="empty-plus" src="../assets/icons/plus.svg" alt=""><span class="empty-label">${t('Dodaj prezentaciju')}</span></button>`;
     const active = s.live?.id === slot.id, loading = s.loading === slot.id;
     const error = slot.error || slot.missing;
-    return `<article class="slot ${active?'live':''} ${selected?.id===slot.id?'selected':''} ${loading?'loading':''} ${error?'error':''}" data-index="${index}" draggable="${!s.current.locked && !active}" title="${escape(error ? slot.error || 'Fajl nije pronađen' : slot.path)}" aria-label="${escape(slot.name)}${active?', aktivan prikaz':''}"><span class="slot-number">${number}</span>${active ? '<span class="live-badge">LIVE</span>' : ''}<button class="slot-trigger" aria-pressed="${selected?.id===slot.id}" aria-label="${escape(slot.name)}: izaberi"><div class="slot-preview">${slot.thumbnail ? `<img draggable="false" src="${slot.thumbnail}" alt="">` : `<span class="fallback-document ${slot.kind==='pdf'?'pdf':''}">${icon('file-text')}${slot.kind==='pdf'?'PDF':'PPT'}</span>`}</div></button><div class="slot-info"><button class="slot-name" title="Klik za izmenu naziva" aria-label="Izmeni naziv: ${escape(slot.name)}">${escape(slot.name)}</button><button class="key-label-button ${slot.keyLabel?'has-alias':''}" title="Natpis na Stream Decku" aria-label="Natpis tastera: ${escape(slot.keyLabel || slot.name)}">${icon('keyboard')}<span>${escape(slot.keyLabel || 'Natpis')}</span></button><span class="slot-meta"><span>${loading?'U TOKU':error?'GREŠKA':active?'LIVE':slot.kind.toUpperCase()}</span><span>${slot.slides ? slot.slides+' SLAJD.' : 'SPREMNO'}</span></span></div></article>`;
+    return `<article class="slot ${active?'live':''} ${selected?.id===slot.id?'selected':''} ${loading?'loading':''} ${error?'error':''}" data-index="${index}" draggable="${!s.current.locked && !active}" title="${escape(error ? slot.error || t('Fajl nije pronađen') : slot.path)}" aria-label="${escape(active?t('{title}, aktivan prikaz',{title:slot.name}):slot.name)}"><span class="slot-number">${number}</span>${active ? '<span class="live-badge">LIVE</span>' : ''}<button class="slot-trigger" aria-pressed="${selected?.id===slot.id}" aria-label="${escape(t('{title}: izaberi',{title:slot.name}))}"><div class="slot-preview">${slot.thumbnail ? `<img draggable="false" src="${slot.thumbnail}" alt="">` : `<span class="fallback-document ${slot.kind==='pdf'?'pdf':''}">${icon('file-text')}${slot.kind==='pdf'?'PDF':'PPT'}</span>`}</div></button><div class="slot-info"><button class="slot-name" title="${t('Klik za izmenu naziva')}" aria-label="${escape(t('Izmeni naziv: {title}',{title:slot.name}))}">${escape(slot.name)}</button><button class="key-label-button ${slot.keyLabel?'has-alias':''}" title="${t('Natpis na Stream Decku')}" aria-label="${escape(t('Natpis tastera: {title}',{title:slot.keyLabel||slot.name}))}">${icon('keyboard')}<span>${escape(slot.keyLabel || t('Natpis'))}</span></button><span class="slot-meta"><span>${loading?t('U TOKU'):error?t('GREŠKA'):active?'LIVE':slot.kind.toUpperCase()}</span><span>${slot.slides ? slot.slides+' '+t('SLAJD.') : t('SPREMNO')}</span></span></div></article>`;
   }).join('');
   if (editing && (editing.eventId !== s.current.id || !s.current.slots.some(slot => slot?.id === editing.id))) editing = null;
   if (!editing && markup !== lastMarkup) { $('grid').innerHTML = markup; lastMarkup = markup; }
   const hasHardware = s.devices.some(d => d.devices?.length);
   $('deck-dot').classList.toggle('online',s.bridge.connected && hasHardware);
-  $('deck-status').textContent = s.bridge.connected && hasHardware ? 'Stream Deck povezan' : 'Kontrola kroz aplikaciju';
-  $('setup').textContent = 'Podešavanja';
-  const summary=s.displays.map((d,i)=>{const role=s.routing.roles[d.id]||'none';return role==='none'?null:`${i+1}: ${role==='notes'?'Notes':'Slajdovi'}`;}).filter(Boolean).join(' · ');
-  $('ppt-status').textContent=s.pptError?'PowerPoint · proveri dozvole':summary||'Izaberi izlaze u Ekranima';
+  $('deck-status').textContent = s.bridge.connected && hasHardware ? t('Stream Deck povezan') : t('Kontrola kroz aplikaciju');
+  const summary=s.displays.map((d,i)=>{const role=s.routing.roles[d.id]||'none';return role==='none'?null:`${i+1}: ${t(role==='notes'?'Notes':'Slajdovi')}`;}).filter(Boolean).join(' · ');
+  $('ppt-status').textContent=s.pptError?t('PowerPoint · proveri dozvole'):summary||t('Izaberi izlaze u Ekranima');
   $('ppt-status').title = s.pptError || '';
   const cue=selected&&s.current.slots.find(slot=>slot?.id===selected.id);
   $('cue-panel').hidden=!cue;
@@ -46,15 +54,15 @@ function render(s) {
   $('go').setAttribute('aria-label',cue?`GO: ${cue.name}`:'GO');
   ['stop','next','previous'].forEach(id=>$(id).disabled=!!s.busy);
   $('live-panel').hidden = !s.live;
-  if (s.live) { $('live-name').textContent = s.live.name; $('live-position').textContent = `Slajd ${s.live.slide || 1}${s.live.total ? ' / '+s.live.total : ''}`; }
+  if (s.live) { $('live-name').textContent = s.live.name; $('live-position').textContent = `${t('Slajd {number}',{number:s.live.slide||1})}${s.live.total ? ' / '+s.live.total : ''}`; }
   const error = s.lastError || s.pptError;
   $('error').hidden = !error; $('error').querySelector('span').textContent = error;
   $('folder-status').hidden = !s.current.folder;
-  if (s.current.folder) { $('folder-status').replaceChildren(); const text=document.createElement('span');text.textContent=`Folder: ${s.current.folder}${s.current.locked?' · dodavanje pauzirano dok je raspored zaključan':''}`; const button=document.createElement('button');button.textContent='Isključi';button.onclick=()=>command('unwatch');$('folder-status').append(text,button); }
-  const monitors=s.displays.map((d,i)=>`<div class="monitor-row"><span class="monitor-number">${i+1}</span><div><strong>${escape(d.label)}</strong><small>${d.width} × ${d.height}${d.internal?' · Laptop':''}${d.id===s.routing.controlId?' · StageDeck':''}</small></div><select data-monitor="${d.id}" aria-label="Uloga ekrana ${i+1}" ${s.live||s.busy?'disabled':''}><option value="none" ${s.routing.roles[d.id]==='none'?'selected':''}>Samo kontrole</option><option value="notes" ${s.routing.roles[d.id]==='notes'?'selected':''}>Notes</option><option value="slides" ${s.routing.roles[d.id]==='slides'?'selected':''}>Slajdovi</option></select></div>`).join('');
+  if (s.current.folder) { $('folder-status').replaceChildren(); const text=document.createElement('span');text.textContent=`${t('Folder: {path}',{path:s.current.folder})}${s.current.locked?' · '+t('dodavanje pauzirano dok je raspored zaključan'):''}`; const button=document.createElement('button');button.textContent=t('Isključi');button.onclick=()=>command('unwatch');$('folder-status').append(text,button); }
+  const monitors=s.displays.map((d,i)=>`<div class="monitor-row"><span class="monitor-number">${i+1}</span><div><strong>${escape(d.label)}</strong><small>${d.width} × ${d.height}${d.internal?' · Laptop':''}${d.id===s.routing.controlId?' · StageDeck':''}</small></div><select data-monitor="${d.id}" aria-label="${t('Uloga ekrana {number}',{number:i+1})}" ${s.live||s.busy?'disabled':''}><option value="none" ${s.routing.roles[d.id]==='none'?'selected':''}>${t('Samo kontrole')}</option><option value="notes" ${s.routing.roles[d.id]==='notes'?'selected':''}>${t('Notes')}</option><option value="slides" ${s.routing.roles[d.id]==='slides'?'selected':''}>${t('Slajdovi')}</option></select></div>`).join('');
   if(monitors!==monitorMarkup){$('monitor-list').innerHTML=monitors;monitorMarkup=monitors;}
   $('identify-displays').disabled=!!s.live||s.busy;$('auto-displays').disabled=!!s.live||s.busy;
-  $('screen-status').textContent=s.routing.missing.length?'Dodeljeni ekran nije priključen. Prikaz neće biti preusmeren na drugi monitor.':s.live?'Zatvori prezentaciju pre promene rasporeda.':summary||'Izaberi bar jedan izlaz da pokreneš prezentaciju.';
+  $('screen-status').textContent=s.routing.missing.length?t('Dodeljeni ekran nije priključen. Prikaz neće biti preusmeren na drugi monitor.'):s.live?t('Zatvori prezentaciju pre promene rasporeda.'):summary||t('Izaberi bar jedan izlaz da pokreneš prezentaciju.');
   $('capture-hint').hidden=s.platform!=='darwin'||s.routing.captureAllowed;
   renderKeys(s);
   renderPdfThumbnails(s);
@@ -63,6 +71,7 @@ $('add-files').onclick = () => command('pick-files');
 $('watch-folder').onclick = () => command('watch-folder');
 $('lock').onclick = () => command('lock');
 $('setup').onclick = () => $('setup-dialog').showModal();
+$('language').onchange = () => command('language', { language: $('language').value });
 $('close-setup').onclick = () => { command('setup-seen'); $('setup-dialog').close(); };
 $('setup-dialog').addEventListener('cancel',()=>command('setup-seen'));
 $('desktop-shortcut').onclick = async () => { const r=await command('desktop-shortcut'); $('setup-result').textContent=r.message || r.error; };
@@ -87,7 +96,7 @@ async function updateKeyPreview(){
   if(generation===previewGeneration)$('key-preview').src=image;
 }
 function editKey(index){
-  if(state.current.locked){toast('Otključaj raspored za izmenu natpisa.');return;}
+  if(state.current.locked){toast(t('Otključaj raspored za izmenu natpisa.'));return;}
   const slot=state.current.slots[index];if(!slot)return;
   keyEdit={index,slot};$('key-file-name').textContent=slot.name;$('key-label').value=slot.keyLabel||'';$('key-size').value=slot.keyFontSize==='large'?'52':slot.keyFontSize==='normal'?'14':slot.keyFontSize||'auto';$('key-layout').value=slot.keyLayout||'title';
   $('key-dialog').showModal();updateKeyPreview();$('key-label').focus();
@@ -100,23 +109,23 @@ $('go').onclick=async()=>{if(!selected||$('go').disabled)return;goPending=true;$
 $('clear-cue').onclick=()=>{selected=null;render(state);};
 $('stop').onclick = () => command('stop'); $('next').onclick = () => command('next'); $('previous').onclick = () => command('previous');
 $('dismiss-error').onclick = () => command('dismiss-error');
-$('new-event').onclick = () => openName('Novi događaj','',name => command('event-new',{name}));
-$('rename-event').onclick = () => openName('Naziv događaja',state.current.name,name => command('event-rename',{name}));
+$('new-event').onclick = () => openName(t('Novi događaj'),'',name => command('event-new',{name}));
+$('rename-event').onclick = () => openName(t('Naziv događaja'),state.current.name,name => command('event-rename',{name}));
 $('name-form').onsubmit = async e => { e.preventDefault(); await nameAction?.($('name-input').value); $('name-dialog').close(); };
 $('cancel-name').onclick = () => $('name-dialog').close();
 $('events').onclick = e => { const button = e.target.closest('[data-event]'); if (button) command('event-switch',{id:button.dataset.event}); };
 function editName(index) {
-  if (state.current.locked) { toast('Otključaj raspored za izmenu naziva.'); return; }
+  if (state.current.locked) { toast(t('Otključaj raspored za izmenu naziva.')); return; }
   if (editing) return;
   const slot=state.current.slots[index]; if (!slot) return;
   const card=$('grid').querySelector(`[data-index="${index}"]`), label=card.querySelector('.slot-name');
-  const input=document.createElement('input'); input.className='slot-name-editor'; input.value=slot.name;input.maxLength=100;input.setAttribute('aria-label','Naziv prezentacije');input.draggable=false;
+  const input=document.createElement('input'); input.className='slot-name-editor'; input.value=slot.name;input.maxLength=100;input.setAttribute('aria-label',t('Naziv prezentacije'));input.draggable=false;
   editing={index,id:slot.id,eventId:state.current.id};card.draggable=false;label.replaceWith(input);input.focus();input.select();
   let finished=false;
   async function finish(save) {
     if(finished)return;
     const name=input.value.trim();
-    if(save&&!name){toast('Naziv ne može biti prazan.');input.focus();return;}
+    if(save&&!name){toast(t('Naziv ne može biti prazan.'));input.focus();return;}
     finished=true;editing=null;lastMarkup='';
     if(save&&name!==slot.name){const result=await command('rename-slot',{index,id:slot.id,name});if(!result.ok)toast(result.error);}
     render(await window.stage.getState());

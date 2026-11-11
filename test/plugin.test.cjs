@@ -10,6 +10,10 @@ for(const native of [false,true])test((native?'Windows native':'JavaScript')+' p
   const child=spawn(native?path.join(__dirname,'../plugin/com.stagedeck.presentations.sdPlugin/windows/StageDeckPlugin.exe'):process.execPath,[...(native?[]:[path.join(__dirname,'../plugin/com.stagedeck.presentations.sdPlugin/plugin.cjs')]),'-port',String(sd.address().port),'-pluginUUID','test-plugin','-registerEvent','registerPlugin','-info',JSON.stringify({devices:[{id:'xl',type:2,name:'Stream Deck XL'}]})],{env:{...process.env,STAGEDECK_TEST_DATA:dir},stdio:'pipe'});
   t.after(()=>{child.kill();for(const c of sd.clients)c.terminate();for(const c of bridge.clients)c.terminate();sd.close();bridge.close();fs.rmSync(dir,{recursive:true,force:true});});
   await waitFor(()=>registered&&hello);
+  sdClient.send(JSON.stringify({event:'sendToPlugin',context:'inspector',payload:{request:'language'}}));
+  await waitFor(()=>events.some(m=>m.event==='sendToPropertyInspector'&&m.context==='inspector'&&m.payload.language==='en'));
+  for(const c of bridge.clients)c.send(JSON.stringify({type:'state',state:{language:'sr'}}));
+  await waitFor(()=>events.some(m=>m.event==='sendToPropertyInspector'&&m.context==='inspector'&&m.payload.language==='sr'));
   for(let i=0;i<32;i++)sdClient.send(JSON.stringify({event:'willAppear',context:'key-'+i,payload:{coordinates:{row:Math.floor(i/8),column:i%8},settings:{}}}));
   await waitFor(()=>Array.from({length:32},(_,i)=>events.some(m=>m.event==='setImage'&&m.context==='key-'+i&&m.payload.image==='image-'+i)).every(Boolean));
   sdClient.send(JSON.stringify({event:'willAppear',context:'last-key',payload:{coordinates:{row:3,column:7},settings:{}}}));

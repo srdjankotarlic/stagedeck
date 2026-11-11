@@ -1,3 +1,6 @@
+import { translateDocument } from './i18n.js';
+translateDocument(new URLSearchParams(location.search).get('language'));
+window.output.onLanguage(translateDocument);
 const video=document.querySelector('video'),canvas=document.querySelector('canvas'),native=new URLSearchParams(location.search).get('native')==='1';let stream,stopping=false,decoding=false,pending,ready=false;
 if(native){
  canvas.hidden=false;

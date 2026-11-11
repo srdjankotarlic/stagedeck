@@ -1,3 +1,4 @@
+import { text } from './i18n.js';
 let signature='',generation=0;
 const loadImage=source=>new Promise(resolve=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>resolve(null);image.src=source;});
 function linesFor(context,label,width){
@@ -34,14 +35,14 @@ export async function renderKey(slot,index,state){
   const layout=keyTextLayout(c,slot,textOnly);
   c.font=`600 ${layout.font}px Inter, sans-serif`;
   layout.lines.forEach((line,i)=>c.fillText(line,72,layout.first+i*layout.lineHeight));
- }else{c.fillStyle=dark?'#8c99ad':'#a8b2bf';c.font='10px Inter, sans-serif';c.fillText('Slobodan taster',72,119);}
+ }else{c.fillStyle=dark?'#8c99ad':'#a8b2bf';c.font='10px Inter, sans-serif';c.fillText(text(state.language,'Slobodan taster'),72,119);}
  const warning=slot&&(slot.missing||slot.error);c.strokeStyle=live?'#ef7180':loading?'#d6a342':warning?'#cf865c':dark?'#3e485b':'#d1dae6';c.lineWidth=live?6:2;c.strokeRect(2,2,140,140);
  if(live){c.fillStyle='#d84848';c.fillRect(89,5,47,17);c.fillStyle='#fff';c.font='600 10px Inter, sans-serif';c.textAlign='center';c.fillText('LIVE',112,17);}
- if(loading||warning){c.fillStyle=loading?'#c69834':'#c27545';c.font='600 8px Inter, sans-serif';c.textAlign='center';c.fillText(loading?'OTVARA SE':'PROVERI FAJL',72,138);}
+ if(loading||warning){c.fillStyle=loading?'#c69834':'#c27545';c.font='600 8px Inter, sans-serif';c.textAlign='center';c.fillText(text(state.language,loading?'OTVARA SE':'PROVERI FAJL'),72,138);}
  return canvas.toDataURL('image/png');
 }
 export async function renderKeys(state){
- const next=JSON.stringify([state.theme,state.current.id,state.current.slots.map(s=>s&&[s.id,s.name,s.keyLabel,s.keyFontSize,s.keyLayout,s.thumbnail,s.missing,!!s.error]),state.live?.id,state.loading]);
+ const next=JSON.stringify([state.theme,state.language,state.current.id,state.current.slots.map(s=>s&&[s.id,s.name,s.keyLabel,s.keyFontSize,s.keyLayout,s.thumbnail,s.missing,!!s.error]),state.live?.id,state.loading]);
  if(next===signature)return;signature=next;const current=++generation;
  const images=await Promise.all(state.current.slots.map((slot,index)=>renderKey(slot,index,state)));
  if(current===generation)await window.stage.command('key-images',{images});

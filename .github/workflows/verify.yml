@@ -49,11 +49,14 @@ jobs:
           $env:STAGEDECK_TEST_EXE = 'C:\StageDeck-Test\StageDeck.exe'
           npm run test:ui
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Package the complete Windows download
+        run: python scripts/package-downloads.py --windows (Get-ChildItem release/StageDeck-*-Windows-Setup.exe).FullName --windows-plugin release/win-unpacked/resources/installers --destination release/bundles
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: StageDeck-Windows-tested-build
           path: |
-            release/StageDeck-*-Windows-Setup.exe
+            release/bundles/StageDeck-Windows.zip
+            release/bundles/SHA256SUMS.txt
             release/win-unpacked/resources/installers/*
             plugin/com.stagedeck.presentations.sdPlugin/windows/StageDeckPlugin.exe
           if-no-files-found: error

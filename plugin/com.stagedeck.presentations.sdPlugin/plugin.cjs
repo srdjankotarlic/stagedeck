@@ -1,17 +1,17 @@
 const fs=require('node:fs');const path=require('node:path');const os=require('node:os');const WebSocket=require('ws');
 const args={};for(let i=2;i<process.argv.length;i+=2)args[process.argv[i]]=process.argv[i+1];
-const contexts=new Map();let bridge,images=[],snapshot,retry;
+const contexts=new Map();let bridge,images=[],language='en',retry,inspector;
 let info={};try{info=JSON.parse(args['-info']||'{}');}catch{}
 const sd=new WebSocket(`ws://127.0.0.1:${args['-port']}`);
 function send(event,context,payload){if(sd.readyState===WebSocket.OPEN)sd.send(JSON.stringify({event,context,payload}));}
-function paint(context){const item=contexts.get(context);if(!item)return;const image=images[item.slot];if(image){send('setImage',context,{image,target:0});send('setTitle',context,{title:'',target:0});}else{send('setImage',context,{image:'images/key.png',target:0});send('setTitle',context,{title:bridge?.readyState===WebSocket.OPEN?`Taster ${item.slot+1}`:'Otvori\nStageDeck',target:0});}}
+function paint(context){const item=contexts.get(context);if(!item)return;const image=images[item.slot];if(image){send('setImage',context,{image,target:0});send('setTitle',context,{title:'',target:0});}else{send('setImage',context,{image:'images/key.png',target:0});send('setTitle',context,{title:bridge?.readyState===WebSocket.OPEN?`${language==='sr'?'Taster':'Key'} ${item.slot+1}`:language==='sr'?'Otvori\nStageDeck':'Open\nStageDeck',target:0});}}
 function hello(){if(bridge?.readyState===WebSocket.OPEN)bridge.send(JSON.stringify({type:'hello',devices:(info.devices||[]).map(d=>({id:d.id,type:d.type,name:d.name}))}));}
 function connect(){
   clearTimeout(retry);
   const base=process.env.STAGEDECK_TEST_DATA||(process.platform==='darwin'?path.join(os.homedir(),'Library/Application Support/StageDeck'):path.join(process.env.APPDATA||path.join(os.homedir(),'AppData/Roaming'),'StageDeck'));
   try{const config=JSON.parse(fs.readFileSync(path.join(base,'bridge.json'),'utf8'));bridge=new WebSocket(`ws://127.0.0.1:${config.port}/deck?token=${encodeURIComponent(config.token)}`);}catch{retry=setTimeout(connect,2000);return;}
   bridge.on('open',hello);
-  bridge.on('message',raw=>{try{const message=JSON.parse(raw.toString());if(message.type==='keys'){images=message.images;for(const context of contexts.keys())paint(context);}if(message.type==='state'){snapshot=message.state;}if(message.type==='result'&&!message.ok&&message.id)send('showAlert',message.id,{});}catch{}});
+  bridge.on('message',raw=>{try{const message=JSON.parse(raw.toString());if(message.type==='keys'){images=message.images;for(const context of contexts.keys())paint(context);}if(message.type==='state'){const next=message.state?.language==='sr'?'sr':'en';if(language!==next){language=next;if(inspector)send('sendToPropertyInspector',inspector,{language});if(!images.length)for(const context of contexts.keys())paint(context);}}if(message.type==='result'&&!message.ok&&message.id)send('showAlert',message.id,{});}catch{}});
   bridge.on('error',()=>{});
   bridge.on('close',()=>{images=[];for(const context of contexts.keys())paint(context);retry=setTimeout(connect,2000);});
 }
@@ -24,6 +24,8 @@ sd.on('message',raw=>{
       const slot=Number.isInteger(configured)&&configured>=0&&configured<32?configured:coordinates.row*8+coordinates.column;
       contexts.set(msg.context,{slot,coordinates});paint(msg.context);
     }
+    if(msg.event==='propertyInspectorDidAppear'||(msg.event==='sendToPlugin'&&msg.payload?.request==='language')){inspector=msg.context;send('sendToPropertyInspector',inspector,{language});}
+    if(msg.event==='propertyInspectorDidDisappear'&&msg.context===inspector)inspector=null;
     if(msg.event==='willDisappear')contexts.delete(msg.context);
     if(msg.event==='keyDown'){
       const item=contexts.get(msg.context);if(!item)return;

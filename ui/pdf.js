@@ -1,4 +1,5 @@
 import * as pdfjs from '../node_modules/pdfjs-dist/build/pdf.mjs';
+document.documentElement.lang=new URLSearchParams(location.search).get('language')==='sr'?'sr-Latn':'en';
 pdfjs.GlobalWorkerOptions.workerSrc=new URL('../node_modules/pdfjs-dist/build/pdf.worker.mjs',location.href).href;
 let doc,pageNumber=1,rendering=false,pending=false;
 const canvas=document.getElementById('page');

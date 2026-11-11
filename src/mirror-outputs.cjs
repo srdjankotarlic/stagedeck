@@ -35,7 +35,7 @@ class MirrorOutputs{
    window.on('page-title-updated',event=>event.preventDefault());
    window.webContents.setWindowOpenHandler(()=>({action:'deny'}));window.webContents.on('will-navigate',event=>event.preventDefault());
    window.on('closed',()=>{this.outputs.delete(id);if(!output.closing){const error=Error('PowerPoint izlaz je zatvoren.');output.reject(error);if(output.ready)this.onFailure(error);else this.failed(error);}});
-   loaded.push(window.loadFile(path.join(__dirname,'../ui/mirror.html'),{query:{native:native?'1':'0',role:target.role}}));
+   loaded.push(window.loadFile(path.join(__dirname,'../ui/mirror.html'),{query:{native:native?'1':'0',role:target.role,language:plan.language}}));
   }
   // Independent renderers load together; every output must still become ready.
   await Promise.all(loaded);

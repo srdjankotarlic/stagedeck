@@ -33,26 +33,12 @@ for system, installer, name, plugins in packages:
     elgato.mkdir(exist_ok=True)
     for file in ("com.stagedeck.presentations.streamDeckPlugin", "StageDeck XL.streamDeckProfile"):
         shutil.copy2(plugins / file, elgato / file)
-    shutil.copy2(root / "INSTALL-SR.md", folder / "Uputstvo.txt")
-    shutil.copy2(root / "docs/VERIFICATION.md", folder / "Provere.md")
-    text = f"""StageDeck {version} — {system}
-
-1. Pokreni {name} i instaliraj aplikaciju.
-   Mac: prevuci StageDeck u Applications. Windows: prati instalaciju.
-2. Pokreni StageDeck sa ikonice na desktopu / iz Applications ili Start menija.
-3. Ako koristis Stream Deck: instaliraj zvanicnu Elgato aplikaciju.
-   U StageDeck Podesavanjima izaberi Instaliraj dodatak, zatim uvezi XL profil.
-   Isti dodatak i profil su u folderu Elgato u ovom paketu.
-4. Ubaci prezentacije, podesi Ekrane, klikni sliku i pritisni GO.
-   Stream Deck taster jednim pritiskom pokrece, drugim potpuno zatvara prikaz.
-
-PowerPoint fajlovi zahtevaju instaliran Microsoft PowerPoint. PDF radi bez njega.
-Windows PowerPoint / Presenter View jos zahteva proveru na pravom Office racunaru.
-Detalji podrzanih sistema, pocetnih Mac dozvola i provera su u Uputstvo.txt i Provere.md.
-
-Preuzimanja: https://github.com/srdjankotarlic/stagedeck/releases/latest
-"""
-    (folder / "POCNI OVDE.txt").write_text(text, encoding="utf-8")
+    shutil.copy2(root / "INSTALL.md", folder / "Start Here.md")
+    shutil.copy2(root / "INSTALL-SR.md", folder / "INSTALL-SR.md")
+    shutil.copy2(root / "docs/VERIFICATION.md", folder / "Verification.md")
+    if system == "Windows":
+        shutil.copy2(root / "scripts/install-windows-bundle.cmd", folder / "Install-StageDeck.cmd")
+        shutil.copy2(root / "scripts/install-windows-bundle.ps1", folder / "Instaliraj-StageDeck.ps1")
     files = sorted(p for p in folder.rglob("*") if p.is_file() and p.name != "SHA256SUMS.txt")
     (folder / "SHA256SUMS.txt").write_text("".join(sha(p) + "  " + p.relative_to(folder).as_posix() + "\n" for p in files))
     target = args.destination / ("StageDeck-" + system + ".zip")
@@ -61,7 +47,12 @@ Preuzimanja: https://github.com/srdjankotarlic/stagedeck/releases/latest
             archive.write(file, file.relative_to(args.destination).as_posix(), compress_type=zipfile.ZIP_STORED if file.suffix in (".dmg", ".exe") else zipfile.ZIP_DEFLATED)
     with zipfile.ZipFile(target) as archive:
         assert archive.testzip() is None
-        assert any(p.endswith("/" + name) for p in archive.namelist())
+        entries = set(archive.namelist())
+        required = [name, "Start Here.md", "Elgato/com.stagedeck.presentations.streamDeckPlugin",
+                    "Elgato/StageDeck XL.streamDeckProfile"]
+        if system == "Windows":
+            required += ["Install-StageDeck.cmd", "Instaliraj-StageDeck.ps1"]
+        assert all(f"{folder.name}/{entry}" in entries for entry in required)
     print(f"Verified complete {system} download: {target}")
 
 (args.destination / "SHA256SUMS.txt").write_text("".join(sha(p) + "  " + p.name + "\n" for p in sorted(args.destination.glob("StageDeck-*.zip"))))

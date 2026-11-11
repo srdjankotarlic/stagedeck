@@ -20,6 +20,8 @@ internal static class StageDeckPlugin {
     private static string[] Images = new string[0];
     private static object[] Devices = new object[0];
     private static string ConfigDirectory;
+    private static volatile string Language = "en";
+    private static volatile string Inspector;
     private static JavaScriptSerializer Serializer() { return new JavaScriptSerializer { MaxJsonLength = 16000000 }; }
     private static Dictionary<string, object> Map(object value) { return value as Dictionary<string, object> ?? new Dictionary<string, object>(); }
     private static object Get(Dictionary<string, object> value, string key) { object result; return value.TryGetValue(key, out result) ? result : null; }
@@ -90,7 +92,7 @@ internal static class StageDeckPlugin {
             await Event("setTitle", context, new { title = "", target = 0 });
         } else {
             await Event("setImage", context, new { image = "images/key.png", target = 0 });
-            await Event("setTitle", context, new { title = Bridge != null && Bridge.State == WebSocketState.Open ? "Taster " + (key.Slot + 1) : "Otvori\nStageDeck", target = 0 });
+            await Event("setTitle", context, new { title = Bridge != null && Bridge.State == WebSocketState.Open ? (Language == "sr" ? "Taster " : "Key ") + (key.Slot + 1) : Language == "sr" ? "Otvori\nStageDeck" : "Open\nStageDeck", target = 0 });
         }
     }
     private static async Task Hello() {
@@ -129,6 +131,15 @@ internal static class StageDeckPlugin {
     }
     private static async Task OnBridge(Dictionary<string, object> message) {
         string type = Text(message, "type");
+        if (type == "state") {
+            string next = Text(Map(Get(message, "state")), "language") == "sr" ? "sr" : "en";
+            if (Language != next) {
+                Language = next;
+                string inspector = Inspector;
+                if (!string.IsNullOrEmpty(inspector)) await Event("sendToPropertyInspector", inspector, new { language = Language });
+                if (Images.Length == 0) foreach (string context in Keys.Keys) await Paint(context);
+            }
+        }
         if (type == "keys") {
             var values = Get(message, "images") as object[];
             if (values == null || values.Length != 32) return;
@@ -152,6 +163,11 @@ internal static class StageDeckPlugin {
             if (slot < 0 || slot > 31) slot = row * 8 + column;
             Keys[context] = new Key { Slot = slot, Row = row, Column = column }; await Paint(context);
         }
+        if (type == "propertyInspectorDidAppear" || (type == "sendToPlugin" && Text(payload, "request") == "language")) {
+            Inspector = context;
+            await Event("sendToPropertyInspector", context, new { language = Language });
+        }
+        if (type == "propertyInspectorDidDisappear" && Inspector == context) Inspector = null;
         if (type == "willDisappear") { Key old; Keys.TryRemove(context, out old); }
         if (type == "keyDown") {
             Key key; if (!Keys.TryGetValue(context, out key)) return;
