@@ -7,6 +7,9 @@ const { _electron:electron,expect }=require('@playwright/test');const assert=req
   const displayIds=(await page.evaluate(()=>window.stage.getState())).displays.map(d=>d.id),roles=Object.fromEntries(displayIds.map((id,i)=>[id,displayIds.length===1?'slides':i===0?'notes':i===1?'slides':'none']));
   const waitState=predicate=>expect.poll(async()=>!!predicate(await page.evaluate(()=>window.stage.getState())),{timeout:20000}).toBe(true);
   await page.waitForSelector('.slot');if(await page.locator('#close-setup').isVisible())await page.locator('#close-setup').click();assert.equal(await page.locator('.slot').count(),32);
+  assert.equal((await page.evaluate(()=>window.stage.getState())).theme,'dark','dark is the default');
+  await page.locator('[data-theme="light"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme','light');
   const files=['01 Otvaranje.pptx','02 Gost predavač.pptx','03 Proizvod.pptx','04 Program događaja.pdf'].map(f=>path.join(root,'.test-output/fixtures',f));
   const imported=await page.evaluate(paths=>window.stage.command('import',{paths}),files);assert.equal(imported.count,4);
   await page.waitForFunction(()=>document.querySelectorAll('.slot:not(.empty)').length===4);

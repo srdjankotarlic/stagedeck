@@ -59,3 +59,4 @@ Na ovom Macu provereno je svih 27 izbora za tri priključena monitora: 26 aktivn
 
 JEZIK
 Engleski je podrazumevan. U Settings → Language izaberi Srpski. Izbor se pamti i ne menja tvoje nazive, prezentacije ili raspored.
+Tamna tema je podrazumevana na novoj instalaciji. Svetlu možeš da izabereš dole levo.

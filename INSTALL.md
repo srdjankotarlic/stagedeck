@@ -34,6 +34,8 @@ Both ZIPs include StageDeck, the Elgato plugin, and the 32-key Stream Deck XL pr
    icon to edit its separate Stream Deck label, font size and preview layout.
 5. **Settings → Language** switches between English and Serbian (Latin script).
    English is the default. The language preference is saved locally.
+6. Dark is the default theme on a new installation. Choose **Light** at the
+   bottom of the sidebar if you prefer it.
 
 If every display is in use, press **Ctrl+Shift+Space** (Windows) or
 **Cmd+Shift+Space** (Mac) to bring the StageDeck controls forward.

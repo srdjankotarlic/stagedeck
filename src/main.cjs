@@ -91,7 +91,7 @@ async function restoreProjection(){
 }
 function state() {
   return {
-    name: 'StageDeck', version: app.getVersion(), platform: process.platform, theme: library.theme || 'light', language: language(),
+    name: 'StageDeck', version: app.getVersion(), platform: process.platform, theme: library.theme || 'dark', language: language(),
     routing: { controlId: appControlId(), notesIds:outputPlan().notes.map(d=>d.id), slidesIds:outputPlan().slides.map(d=>d.id), audienceId:displayPlan().audience.id, separate:displayPlan().separate, roles:outputPlan().assignments, missing:outputPlan().missing, custom:!!library.displayRoles, mirrors:mirrors?.snapshot()||[], captureAllowed:process.platform!=='darwin'||systemPreferences.getMediaAccessStatus('screen')==='granted' },
     firstRun: !library.setupSeen,
     events: library.events.map(e => ({ id: e.id, name: e.name })),
@@ -493,7 +493,7 @@ function refreshMenu() {
 }
 app.whenReady().then(async () => {
   libraryFile = path.join(app.getPath('userData'), 'library.json');
-  library = loadLibrary(libraryFile); library.theme ||= 'light'; nativeTheme.themeSource = library.theme; persist();
+  library = loadLibrary(libraryFile); library.theme ||= 'dark'; nativeTheme.themeSource = library.theme; persist();
   ipcMain.handle('state', () => state());
   ipcMain.handle('command', async (_, name, payload) => localResult(language(), await command(name,payload)));
   ipcMain.handle('pdf:read', async (_, id) => { const slot = findSlot(id); if (!slot || slot.kind !== 'pdf') throw Error(presentMessage('PDF nije pronađen.')); return fs.promises.readFile(slot.path); });
