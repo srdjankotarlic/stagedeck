@@ -39,6 +39,12 @@ Use it with an Elgato Stream Deck XL or run the whole show with your mouse.
 | --- | --- |
 | ![Native PowerPoint Presenter View with current slide, next slide and speaker notes on the presenter display](docs/media/native-powerpoint-presenter-view.webp) | ![The same PowerPoint keynote slide fullscreen on the separate audience display](docs/media/fullscreen-powerpoint-slides.webp) |
 
+Click a card name to edit it. The context menu can restore the filename,
+replace the source, reveal it in its folder, or remove the slot from the layout.
+StageDeck leaves the original files in place. Use the slide arrows, **Escape**
+to close, and **Ctrl+Shift+Space** (Windows) or **Cmd+Shift+Space** (Mac) to
+bring the control desk forward when every screen is showing an output.
+
 ## Set up Elgato Stream Deck XL
 
 1. Install the Elgato Stream Deck desktop app. Open StageDeck's **Settings** and
@@ -48,7 +54,8 @@ Use it with an Elgato Stream Deck XL or run the whole show with your mouse.
 3. In StageDeck, click the keyboard icon on a card to set a short key label,
    such as `KEYNOTE` or `N23`, without changing the presentation's full name.
    Choose **Text only** for large labels or **Image + text** for a slide preview
-   with the label. The editor shows what will appear on the key.
+   with the label. Pick automatic sizing or set a size up to 64 px; the editor
+   shows what will appear on the key.
 4. Keep both desktop apps running. Press a key to start, look for its red
    **LIVE** state, and press it again to end that presentation.
 

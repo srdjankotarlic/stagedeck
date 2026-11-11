@@ -2,6 +2,12 @@
 
 Stability takes priority over startup speed. Existing PowerPoint readiness, output placement, capture and complete-close checks remain in place.
 
+## StageDeck 0.5.7 — languages and default theme
+
+- [Windows build and installer verification](https://github.com/srdjankotarlic/stagedeck/actions/runs/43027735078): tested the packaged app after installation, including English/Serbian, dark mode defaults, PDF playback, native Win32 window capture and placement, and the Windows Stream Deck plugin protocol. The hosted runner has no Microsoft Office or physical Stream Deck.
+- On this Mac, the installed 0.5.7 build opened real PowerPoint, presented slides and Presenter View on separate displays, advanced and switched documents, and closed the show. The same installer passed the UI/PDF and local Stream Deck protocol tests. The application was signed with the same designated requirement as the previous installed build.
+- The native PowerPoint automation and display role rules are unchanged from the Windows build tested with PowerPoint and physical hardware in 0.5.6. The 0.5.7 tests do not repeat that physical Windows setup.
+
 ## Windows 0.5.6 — remaining empty PowerPoint editor
 
 An additional installed-app performance comparison on 10 November measured three consecutive open/close cycles of the same PPT with both outputs ready. Version 0.5.6 opened in 4790/4610/4479 ms (median 4610), and closed in 1450/1494/1424 ms (median 1450). A trial that precompiled the unchanged Win32 C# helper opened in 4309/5693/5182 ms (median 5182) and closed in 1485/1444/1375 ms (median 1444). It did not demonstrate a useful end-to-end speed improvement, so it was rejected and is not in the release. Readiness, routing, capture and complete-close checks were retained. These are local samples, not universal performance guarantees.
