@@ -1,95 +1,82 @@
-# StageDeck — PowerPoint and PDF presentation launcher for Stream Deck XL
+# StageDeck — Free PDF & PowerPoint viewer for live events
 
-StageDeck is a desktop presentation cue desk for Windows and macOS. Load a run
-of PowerPoint and PDF files before the event, give each presentation a key, and
-start the right file without searching through folders in front of the audience.
-Use it with an Elgato Stream Deck XL or run the whole show with your mouse.
+**Open PDFs and PowerPoint presentations from one screen and show them fullscreen on another.** StageDeck is free and open source for Windows and macOS. It gives AV technicians, event operators, and presenters a 32-slot grid to organize a show's files before the audience arrives.
 
-[**Download for Windows**](https://github.com/srdjankotarlic/stagedeck/releases/latest/download/StageDeck-Windows.zip) ·
-[**Download for Mac**](https://github.com/srdjankotarlic/stagedeck/releases/latest/download/StageDeck-Mac.zip) ·
-[Website](https://srdjankotarlic.github.io/stagedeck/) ·
-[Installation guide](INSTALL.md) · [Uputstvo na srpskom](INSTALL-SR.md)
+[**Download for Windows**](https://github.com/srdjankotarlic/stagedeck/releases/latest/download/StageDeck-Windows.zip) · [**Download for Mac**](https://github.com/srdjankotarlic/stagedeck/releases/latest/download/StageDeck-Mac.zip) · [All releases](https://github.com/srdjankotarlic/stagedeck/releases)
 
-![StageDeck dark theme with PowerPoint and PDF thumbnails on a 32-slot presentation grid](docs/media/stage-deck-powerpoint-pdf-grid.webp)
+PDFs play directly in StageDeck. PowerPoint files use the desktop Microsoft PowerPoint app, so you can show its native Presenter View with speaker notes on a separate display. Run the show with a mouse or use the included Elgato Stream Deck XL plugin. StageDeck runs locally and requires no account.
 
-## Run the show
+![StageDeck's 32-slot grid with PDF and PowerPoint previews for a sample conference](docs/media/stage-deck-powerpoint-pdf-grid.webp)
 
-1. **Load your event.** Drag PowerPoint or PDF files into the 32-slot grid, or
-   link a folder to pick up new files. StageDeck uses the filename and generates
-   a preview where available. Drag slots to reorder them; lock the layout when
-   you're ready. Keep separate events for different rooms or shows.
-2. **Assign displays.** Identify up to three connected displays. For each one,
-   choose **Controls only**, **Presenter View** for PowerPoint notes, or
-   **Slides** for the audience. The same output can appear on multiple displays.
-   PDF playback uses the Slides assignments and needs no Office installation.
-3. **Cue and go.** Click a thumbnail to select it, then press **GO**. Clicking
-   or double-clicking a card alone won't put it live. Use the slide controls
-   to navigate and **Close** to clear the show. The active slot is marked red.
-4. **Or press a Stream Deck key.** The first press opens the presentation; the
-   second closes it and its output. StageDeck does not close other PowerPoint
-   documents. Live keys turn red.
+[What it does](#what-stagedeck-does) · [First show](#run-your-first-show) · [Stream Deck XL](#elgato-stream-deck-xl) · [Installation](#installation-and-requirements) · [Project website](https://srdjankotarlic.github.io/stagedeck/)
 
-| Click a cue, then press GO | Assign presenter notes and audience slides |
+## What StageDeck does
+
+| For your show | What you can do |
 | --- | --- |
-| ![Selected opening keynote with an explicit GO button](docs/media/cue-presentation-with-go.webp) | ![Display routing with an Identify displays button and separate Presenter View and Slides roles](docs/media/powerpoint-presenter-view-display-routing.webp) |
-| **Live status and navigation** | **Fullscreen PDF output** |
-| ![Red LIVE indication and previous, next and close controls in StageDeck](docs/media/live-status-and-slide-controls.webp) | ![Demo event agenda PDF projected fullscreen on the slides output](docs/media/fullscreen-pdf-slides.webp) |
+| **View and present PDFs** | Open PDFs directly, advance through pages, and send them fullscreen to one or more audience displays. PDF playback works without Office. |
+| **Present PowerPoint files** | Play a deck in desktop PowerPoint. Send slides to the audience and keep the current slide, next slide, and speaker notes on the presenter display. |
+| **Route up to three displays** | Identify connected screens and assign **Controls only**, **Presenter View**, or **Slides** to each. You can repeat a role on multiple displays. |
+| **Prepare an event** | Drag files into a 32-slot grid or link a folder to pick up new files. See filenames and available previews, reorder slots, save separate events, and lock the layout before going live. |
+| **Control playback** | Select a card, then press **GO** to put it live. The active cue turns red. Use the navigation arrows and **Close** from the desk. |
+| **Run from a Stream Deck XL** | Use the included 32-key profile to start a presentation with one press and close it with the next. Live keys turn red. Use a short key label or a preview with text. |
 
-| PowerPoint Presenter View | Fullscreen PowerPoint audience output |
+| PDF viewer · audience output | PowerPoint · audience output |
 | --- | --- |
-| ![Native PowerPoint Presenter View with current slide, next slide and speaker notes on the presenter display](docs/media/native-powerpoint-presenter-view.webp) | ![The same PowerPoint keynote slide fullscreen on the separate audience display](docs/media/fullscreen-powerpoint-slides.webp) |
+| ![An event agenda PDF shown fullscreen on the audience display](docs/media/fullscreen-pdf-slides.webp) | ![A PowerPoint keynote shown fullscreen on the audience display](docs/media/fullscreen-powerpoint-slides.webp) |
+| **PowerPoint · what the presenter sees** | **Display routing · what the operator sets** |
+| ![Native PowerPoint Presenter View with current and next slides plus private speaker notes](docs/media/native-powerpoint-presenter-view.webp) | ![StageDeck display settings assigning Presenter View and Slides to separate monitors](docs/media/powerpoint-presenter-view-display-routing.webp) |
 
-Click a card name to edit it. The context menu can restore the filename,
-replace the source, reveal it in its folder, or remove the slot from the layout.
-StageDeck leaves the original files in place. Use the slide arrows, **Escape**
-to close, and **Ctrl+Shift+Space** (Windows) or **Cmd+Shift+Space** (Mac) to
-bring the control desk forward when every screen is showing an output.
+## Run your first show
 
-## Set up Elgato Stream Deck XL
+1. **Load your files.** Drop your decks and PDFs onto the grid in show order. Click a card name to edit it in StageDeck. Right-click to replace a source, restore its filename, reveal it in its folder, or remove the cue.
+2. **Assign your screens.** Open **Displays** and select **Identify displays**. Give the projector the **Slides** role. For PowerPoint, give the speaker's screen **Presenter View**. With a third screen, the operator can keep **Controls only**.
+3. **Select a presentation and press GO.** A click on a card selects it for review. **GO** starts the show. Use **Previous slide**, **Next slide**, and **Close** from StageDeck.
 
-1. Install the Elgato Stream Deck desktop app. Open StageDeck's **Settings** and
-   choose **Install plugin**. Approve the install in Elgato.
-2. Select the bundled **StageDeck XL** profile. If it doesn't appear, use
-   **Import profile** in StageDeck. The profile maps all 32 physical positions.
-3. In StageDeck, click the keyboard icon on a card to set a short key label,
-   such as `KEYNOTE` or `N23`, without changing the presentation's full name.
-   Choose **Text only** for large labels or **Image + text** for a slide preview
-   with the label. Pick automatic sizing or set a size up to 64 px; the editor
-   shows what will appear on the key.
-4. Keep both desktop apps running. Press a key to start, look for its red
-   **LIVE** state, and press it again to end that presentation.
-
-| Plugin and XL profile setup | Edit a key without renaming the presentation |
+| Selected cue ready for GO | Live cue with navigation and Close |
 | --- | --- |
-| ![Settings with Install plugin and Import profile for Elgato Stream Deck](docs/media/elgato-stream-deck-plugin-setup.webp) | ![Stream Deck key editor showing a large KEYNOTE label on the actual key preview](docs/media/stream-deck-xl-key-label.webp) |
+| ![The opening keynote selected with a separate GO button](docs/media/cue-presentation-with-go.webp) | ![Red LIVE indicator beside previous, next, and close controls](docs/media/live-status-and-slide-controls.webp) |
+
+Use **Escape** to close the active presentation. When every screen is in use, **Ctrl+Shift+Space** on Windows or **Cmd+Shift+Space** on Mac brings the control window forward.
+
+## Elgato Stream Deck XL
+
+The Windows and Mac downloads both include the plugin and the 32-key **StageDeck XL** profile. You can run the entire show from StageDeck if you don't have a Stream Deck.
+
+1. Install the Elgato Stream Deck desktop app. In StageDeck, open **Settings → Install plugin** and approve the install in Elgato.
+2. Select the **StageDeck XL** profile. If needed, choose **Import profile** in StageDeck to map all 32 key positions.
+3. Click the keyboard icon on any presentation card to set a key label, such as `KEYNOTE` or `N23`. The presentation can keep its full name in StageDeck. Choose **Text only** or **Image + text**, preview the key, and set the text size up to 64 px.
+4. With both desktop apps running, press a key to go live. The key turns red. Press it again to close that presentation.
+
+| Plugin installation and profile import | Live preview of a custom key label |
+| --- | --- |
+| ![StageDeck Settings with the Elgato plugin installation and profile import controls](docs/media/elgato-stream-deck-plugin-setup.webp) | ![Stream Deck key editor with a large KEYNOTE label and a preview of the actual key image](docs/media/stream-deck-xl-key-label.webp) |
+
+## Installation and requirements
+
+| Download | How to install |
+| --- | --- |
+| [**Windows ZIP**](https://github.com/srdjankotarlic/stagedeck/releases/latest/download/StageDeck-Windows.zip) | Windows 10 or 11, x64. Extract the ZIP and run `Install-StageDeck.cmd` for StageDeck and the Elgato plugin. Run `StageDeck-Setup.exe` to install the app on its own. |
+| [**Mac ZIP**](https://github.com/srdjankotarlic/stagedeck/releases/latest/download/StageDeck-Mac.zip) | macOS 13 or newer, Intel or Apple Silicon. Extract the ZIP, open `StageDeck.dmg`, and drag StageDeck into Applications. Follow the installation guide for macOS permissions. |
+
+| File or device | Requirement |
+| --- | --- |
+| **PDF** (`.pdf`) | Plays in StageDeck. |
+| **PowerPoint** (`.ppt`, `.pptx`, `.pptm`, `.pps`, `.ppsx`) | Requires the desktop Microsoft PowerPoint app for playback and Presenter View. |
+| **Elgato Stream Deck XL** | Optional. Requires Elgato Stream Deck 6.6 or later. |
+
+[Installation guide](INSTALL.md) · [Uputstvo na srpskom](INSTALL-SR.md) · [Tested setups and verification](docs/VERIFICATION.md)
 
 ## Language and appearance
 
-English is the default. Switch to Serbian (Latin script) under
-**Settings → Language**. A new installation starts in dark mode; choose **Light**
-in the sidebar if you prefer it. StageDeck saves both choices. Presentation
-names, key labels, folder links, and display assignments stay as entered.
+StageDeck opens in English and uses dark mode on a new installation. Switch to Serbian in **Settings → Language** or choose **Light** in the sidebar. Your choices are saved locally.
 
-| Light theme | Serbian interface |
+| Optional light mode | Serbian interface |
 | --- | --- |
-| ![StageDeck in the optional light theme](docs/media/stage-deck-light-theme.webp) | ![StageDeck with menus and controls in Serbian](docs/media/stage-deck-serbian-interface.webp) |
+| ![The presentation grid in light mode](docs/media/stage-deck-light-theme.webp) | ![StageDeck with Serbian navigation, menus, and controls](docs/media/stage-deck-serbian-interface.webp) |
 
-## Requirements and downloads
+StageDeck is free under the [MIT license](LICENSE). If it helps you run a show, star the repository or share it with your crew. Use GitHub Issues to report a problem or tell us what would help in your setup.
 
-| | Requirements | Installation |
-| --- | --- | --- |
-| **Windows** | Windows 10/11 x64 | Extract the ZIP, run `Install-StageDeck.cmd` for the app and plugin, or run `StageDeck-Setup.exe` to install the app manually. |
-| **macOS** | macOS 13 or later, Intel or Apple Silicon | Extract the ZIP, open `StageDeck.dmg`, then drag the app into Applications. See the [Mac permissions and installation notes](INSTALL.md). |
-| **PowerPoint** | Microsoft PowerPoint desktop app | PowerPoint renders the original slides and Presenter View. PDFs play without Office. |
-| **Stream Deck XL** | Optional; Elgato Stream Deck 6.6 or later | Both downloads include the plugin and XL profile. |
+[Report an issue](https://github.com/srdjankotarlic/stagedeck/issues/new) · [Build from source](docs/DEVELOPMENT.md)
 
-StageDeck and the plugin work locally, without an account. Check your exact
-Office build, monitor arrangement, and presentations before going on air.
-See the [verification notes](docs/VERIFICATION.md) for tested configurations,
-the [release history](https://github.com/srdjankotarlic/stagedeck/releases) for
-previous installers, and the [developer guide](docs/DEVELOPMENT.md) for source
-and build instructions.
-
-[Report an issue](https://github.com/srdjankotarlic/stagedeck/issues/new) ·
-[MIT license](LICENSE). StageDeck is an independent project and is not affiliated
-with Microsoft or Elgato.
+StageDeck is an independent project and is not affiliated with Microsoft or Elgato.
