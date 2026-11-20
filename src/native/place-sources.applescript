@@ -8,7 +8,7 @@ on run argv
      set n to count of buttons of w
      if n is 0 then
       set position of w to {((item 4 of argv) as integer), ((item 5 of argv) as integer)}
-     else if n ≥ 4 then
+     else if (windowTitle as text) contains "Presenter View" or n ≥ 4 then
       set position of w to {((item 2 of argv) as integer), ((item 3 of argv) as integer)}
      else if n is 3 then
       set position of w to {((item 6 of argv) as integer), ((item 7 of argv) as integer)}

@@ -78,7 +78,7 @@ async function coverNativeSources(file){
   const {intersection}=require('./source-placement.cjs');
   for(let attempt=0;attempt<3;attempt++){
     const layout=await ppt.execute('layout',file);
-    const notes=layout.windows.find(w=>w.buttons>=4),slides=layout.windows.find(w=>w.buttons===0);
+    const notes=layout.windows.find(w=>w.role==='notes'),slides=layout.windows.find(w=>w.role==='slides');
     const np=notes&&plan.notes.length?placeSource(notes,plan.notes,unused):{x:-30000,y:-30000};
     const sp=slides&&plan.slides.length?placeSource(slides,plan.slides,unused):{x:-30000,y:-30000};
     const host=hosts[0].bounds;
@@ -263,7 +263,7 @@ async function toggle(index) {
       const started=await ppt.execute('start',slot.path,'',options);
       if(process.platform==='darwin'){
         const wanted=outputPlan(),deadline=Date.now()+15000;let ready=false;
-        while(Date.now()<deadline){const layout=await ppt.execute('layout',slot.path);if((!wanted.notes.length||layout.windows.some(w=>w.buttons>=4))&&(!wanted.slides.length||layout.windows.some(w=>w.buttons===0))){ready=true;break;}await new Promise(resolve=>setTimeout(resolve,200));}
+        while(Date.now()<deadline){const layout=await ppt.execute('layout',slot.path);if((!wanted.notes.length||layout.windows.some(w=>w.role==='notes'))&&(!wanted.slides.length||layout.windows.some(w=>w.role==='slides'))){ready=true;break;}await new Promise(resolve=>setTimeout(resolve,200));}
         if(!ready)throw Error('PowerPoint prikaz još nije spreman. Proveri dijaloge u PowerPointu pa ponovi GO.');
       }
       await mirrors.start(slot.path,{...outputPlan(),mirrorAll:true,language:language()},started.handles||{});

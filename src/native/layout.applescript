@@ -9,7 +9,13 @@ on run argv
         set p to position of w
         set s to size of w
         set n to count of buttons of w
-        set layoutText to layoutText & "{\"buttons\":" & n & ",\"x\":" & item 1 of p & ",\"y\":" & item 2 of p & ",\"width\":" & item 1 of s & ",\"height\":" & item 2 of s & "},"
+        set windowRole to "editor"
+        if n is 0 then
+          set windowRole to "slides"
+        else if (windowTitle as text) contains "Presenter View" or n ≥ 4 then
+          set windowRole to "notes"
+        end if
+        set layoutText to layoutText & "{\"role\":\"" & windowRole & "\",\"buttons\":" & n & ",\"x\":" & item 1 of p & ",\"y\":" & item 2 of p & ",\"width\":" & item 1 of s & ",\"height\":" & item 2 of s & "},"
       end if
     end repeat
     end tell

@@ -12,7 +12,7 @@ const {_electron:electron}=require('@playwright/test');const assert=require('nod
    await page.waitForFunction(async id=>(await window.stage.getState()).routing.controlId===id,control.id);
    const started=await page.evaluate(()=>window.stage.command('toggle',{index:0}));console.log('START',control.id,started);assert.equal(started.ok,true);
    const s=await page.evaluate(()=>window.stage.getState());const wanted=s.displays.find(d=>d.id===s.routing.audienceId).bounds;const noteScreen=s.displays.find(d=>d.id===s.routing.controlId).bounds;
-   const layout=await ppt.execute('layout',files[0]);const notes=layout.windows.find(w=>w.buttons>=4),show=layout.windows.find(w=>w.buttons===0);
+   const layout=await ppt.execute('layout',files[0]);const notes=layout.windows.find(w=>w.role==='notes'),show=layout.windows.find(w=>w.role==='slides');
    for(const k of ['x','y','width','height']){assert.equal(notes[k],noteScreen[k],`notes ${k}`);assert.equal(show[k],wanted[k],`audience ${k}`);}
    assert.equal((await ppt.execute('status')).windows[0].fullscreen,true);
    await page.evaluate(()=>window.stage.command('next'));await page.waitForFunction(async()=> (await window.stage.getState()).live?.slide===2);
