@@ -440,11 +440,14 @@ async function command(name, payload = {}) {
       case 'desktop-shortcut': return await createDesktopShortcut();
       case 'display': library.displayId = Number(payload.id); persist(); break;
       case 'dismiss-error': lastError = ''; break;
+      case 'verification-diagnostics':
       case 'copy-diagnostics': {
+        if (name === 'verification-diagnostics' && !process.env.STAGEDECK_TEST_DATA) throw Error('Nepoznata komanda.');
         const pluginDirectory=process.platform==='win32'?path.join(app.getPath('appData'),'Elgato/StreamDeck/Plugins/com.stagedeck.presentations.sdPlugin'):path.join(app.getPath('appData'),'com.elgato.StreamDeck/Plugins/com.stagedeck.presentations.sdPlugin');
         let plugin={installed:false};
         try{const manifest=JSON.parse(fs.readFileSync(path.join(pluginDirectory,'manifest.json'),'utf8'));const entry=process.platform==='win32'?(manifest.CodePathWin||manifest.CodePath):(manifest.CodePathMac||manifest.CodePath);plugin={installed:true,version:manifest.Version,entry,entryExists:fs.existsSync(path.join(pluginDirectory,entry))};}catch{}
-        const report={version:app.getVersion(),platform:process.platform,os:os.release(),electron:process.versions.electron,error:lastError,powerPointError:pptError,powerPoint:ppt.diagnostics(),plugin,streamDeckConnected:devices.size>0,roles:outputPlan().assignments,displays:screen.getAllDisplays().map(d=>({id:d.id,label:d.label,bounds:d.bounds,scaleFactor:d.scaleFactor})),outputs:mirrors?.snapshot()||[]};
+        const report={version:app.getVersion(),platform:process.platform,os:os.release(),electron:process.versions.electron,error:lastError,powerPointError:pptError,powerPoint:ppt.diagnostics(),plugin,streamDeckConnected:devices.size>0,roles:outputPlan().assignments,displays:screen.getAllDisplays().map(d=>({id:d.id,label:d.label,bounds:d.bounds,scaleFactor:d.scaleFactor})),outputs:mirrors?.snapshot()||[], nativeOutputs:projectionPlan?.nativeOutputs||[]};
+        if (name === 'verification-diagnostics') return {ok:true, report};
         clipboard.writeText(JSON.stringify(report,null,2));
         return {ok:true,message:'Detalji su kopirani.'};
       }

@@ -2,6 +2,14 @@
 
 Stability takes priority over startup speed. Existing PowerPoint readiness, output placement, capture and complete-close checks remain in place.
 
+## StageDeck 0.5.9 Windows test build
+
+For layouts with one Slides display and up to one Presenter View display, StageDeck uses PowerPoint's native fullscreen windows. Win32 resolves the monitor bounds from the center of the selected display. Layouts that duplicate a role still use captured outputs. The application checks that native windows remain on their assigned displays while live.
+
+The Windows workflow tests window placement and monitor lookup with real Win32 windows. It also verifies that StageDeck can go live without opening a capture window, detects output that moved, and closes it safely. Office is simulated for this check. The reported failure on the second Windows computer still needs verification with that computer's desktop PowerPoint and display setup.
+
+The included **Proveri Windows.cmd** runs the installed build with a sample deck in an isolated library. It checks physical output bounds, slide changes, and shutdown. If it fails, the report records the failing phase and display details.
+
 ## StageDeck 0.5.8
 
 - The installed Mac build was tested with a single physical display and desktop PowerPoint. It opened and advanced a slideshow, switched between decks, and closed the active show. Assigning Presenter View to the single screen produced a live notes output.
