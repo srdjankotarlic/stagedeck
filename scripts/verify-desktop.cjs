@@ -13,14 +13,15 @@ async function windowsOutputHash(executable, bounds) {
   "$ErrorActionPreference='Stop'",
   '. '+quotedHelper,
   'Add-Type -AssemblyName System.Drawing',
-  '$bitmap=New-Object System.Drawing.Bitmap(96,54)',
+  `$bitmap=New-Object System.Drawing.Bitmap(${width},${height})`,
   '$graphics=[Drawing.Graphics]::FromImage($bitmap)',
-  `$graphics.CopyFromScreen(${x+Math.floor(width/2)-48},${y+Math.floor(height/2)-27},0,0,$bitmap.Size)`,
+  `$graphics.CopyFromScreen(${x},${y},0,0,$bitmap.Size)`,
+  '$sample=New-Object System.Drawing.Bitmap($bitmap,160,90)',
   '$stream=New-Object IO.MemoryStream',
-  '$bitmap.Save($stream,[Drawing.Imaging.ImageFormat]::Png)',
+  '$sample.Save($stream,[Drawing.Imaging.ImageFormat]::Png)',
   '$sha=[Security.Cryptography.SHA256]::Create()',
   '[Convert]::ToBase64String($sha.ComputeHash($stream.ToArray()))',
-  '$graphics.Dispose(); $bitmap.Dispose(); $stream.Dispose(); $sha.Dispose()'
+  '$graphics.Dispose(); $sample.Dispose(); $bitmap.Dispose(); $stream.Dispose(); $sha.Dispose()'
  ].join('; ');
  const powershell=path.join(process.env.SystemRoot||'C:/Windows','System32/WindowsPowerShell/v1.0/powershell.exe');
  const args=['-NoProfile','-ExecutionPolicy','Bypass','-EncodedCommand',Buffer.from(command,'utf16le').toString('base64')];
@@ -59,7 +60,11 @@ class CDP{
   assert.equal((await command('key-label',{index:0,id,label:'N23',size:64,layout:'title'})).ok,true);
   const label=(await get()).current.slots[0];assert.equal(label.name,'Provera ČĆŽ ŠĐ');assert.equal(label.keyLabel,'N23');assert.equal(label.keyFontSize,64);pass('Independent N23 label, full-text layout and font size');
   await click('#go');
-  const live=await until(async()=>{const s=await idle();if(s.lastError)throw Error(s.lastError);return s.live?s:false;},90000);
+  const live=await until(async()=>{
+   const state=await get();
+   return !state.busy && (state.live || state.lastError) ? state : false;
+  },90000);
+  if(live.lastError)throw Error(live.lastError);
   assert.equal(live.live.total,3);
   const nativeOutputs=live.routing.nativeOutputs||[];
   const mirrors=live.routing.mirrors;
