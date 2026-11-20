@@ -2,6 +2,11 @@ on run argv
   set presentationName to item 1 of argv
   tell application "Microsoft PowerPoint"
     activate
+    if (count of argv) > 2 and (item 3 of argv) is "single-presenter" then
+      -- On one Mac display, Option+Return opens Presenter View directly.
+      tell application "System Events" to key code 36 using option down
+      return "{\"ok\":true}"
+    end if
     run slide show slide show settings of presentation presentationName
     delay 0.4
     if (count of slide show windows) is 0 then

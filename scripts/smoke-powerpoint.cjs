@@ -12,6 +12,17 @@ const {_electron:electron}=require('@playwright/test');const assert=require('nod
   const switched=await page.evaluate(()=>window.stage.command('toggle',{index:1}));console.log('SWITCH',JSON.stringify(switched));assert.equal(switched.ok,true);
   current=await page.evaluate(()=>window.stage.getState());assert.equal(current.live.name,'02 Gost predavač');assert.equal(current.live.slide,1);
   const stopped=await page.evaluate(()=>window.stage.command('toggle',{index:1}));assert.equal(stopped.ok,true);assert.equal((await page.evaluate(()=>window.stage.getState())).live,null);
+  if(current.displays.length===1){
+    const id=current.displays[0].id;
+    assert.equal((await page.evaluate(id=>window.stage.command('display-roles',{roles:{[id]:'notes'}}),id)).ok,true);
+    const presenter=await page.evaluate(()=>window.stage.command('toggle',{index:0}));
+    assert.equal(presenter.ok,true,presenter.error);
+    current=await page.evaluate(()=>window.stage.getState());
+    assert.equal(current.routing.mirrors[0]?.role,'notes');
+    assert.equal(current.routing.mirrors[0]?.ready,true);
+    assert.equal((await page.evaluate(()=>window.stage.command('stop'))).ok,true);
+    console.log('NATIVE PASS: single-screen Presenter View opens on explicit notes assignment.');
+  }
   console.log('NATIVE PASS: installed Mac app starts actual PowerPoint; reads real slide count and position; advances; switches decks; second press ends the slideshow.');
  }finally{await app.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

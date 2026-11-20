@@ -26,7 +26,10 @@ class PowerPoint {
   run(operation, file, output, options) {
     if (process.platform === 'darwin') return new Promise((resolve, reject) => {
       const args = [path.join(nativeDirectory, 'powerpoint.applescript'), operation, file, options.showPresenter === false ? 'false' : 'true', options.multipleDisplays === false ? 'single' : 'multiple'];
-      if (operation === 'start') args.splice(0, args.length, path.join(nativeDirectory, 'launch.applescript'), path.basename(file), options.showPresenter === false ? 'false' : 'true');
+      if (operation === 'start') {
+        const launchMode = options.multipleDisplays === false && options.showPresenter ? 'single-presenter' : 'default';
+        args.splice(0, args.length, path.join(nativeDirectory, 'launch.applescript'), path.basename(file), options.showPresenter === false ? 'false' : 'true', launchMode);
+      }
       if (operation === 'layout') args.splice(0, args.length, path.join(nativeDirectory, 'layout.applescript'), path.basename(file, path.extname(file)));
       if (operation === 'place-sources') args.splice(0,args.length,path.join(nativeDirectory,'place-sources.applescript'),path.basename(file,path.extname(file)),...options.positions.map(String));
       if (operation === 'route-roles') args.splice(0,args.length,path.join(nativeDirectory,'route-roles.applescript'),path.basename(file,path.extname(file)),options.hideSlides ? 'true':'false',options.hideNotes ? 'true':'false');
