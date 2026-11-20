@@ -2,6 +2,12 @@
 
 Stability takes priority over startup speed. Existing PowerPoint readiness, output placement, capture and complete-close checks remain in place.
 
+## StageDeck 0.5.8
+
+- The installed Mac build was tested with a single physical display and desktop PowerPoint. It opened and advanced a slideshow, switched between decks, and closed the active show. Assigning Presenter View to the single screen produced a live notes output.
+- The desktop smoke test covers real PDF rendering and navigation, rejection of an invalid PDF before a LIVE status, thumbnail recovery after a watched PDF is repaired, and closing a live PDF whose source was removed.
+- The Windows installer, UI, Win32 integration and standalone Stream Deck plugin protocol are covered by the [Windows workflow](https://github.com/srdjankotarlic/stagedeck/actions/runs/44729357645). Desktop PowerPoint and physical Stream Deck button presses require a separate Windows test.
+
 ## StageDeck 0.5.7 — languages and default theme
 
 - [Windows build and installer verification](https://github.com/srdjankotarlic/stagedeck/actions/runs/43027735078): tested the packaged app after installation, including English/Serbian, dark mode defaults, PDF playback, native Win32 window capture and placement, and the Windows Stream Deck plugin protocol. The hosted runner has no Microsoft Office or physical Stream Deck.
