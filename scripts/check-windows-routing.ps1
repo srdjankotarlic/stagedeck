@@ -25,7 +25,23 @@ try {
   if(-not [PptDisplay]::ShowGeometry($handles.slides,37.5,37.5,240,135)){throw 'Office points were not correlated with physical pixels.'}
   $slides.Text='PowerPoint Slide Show - [Specific deck.pptx [Read-Only]]'
   if(-not [PptDisplay]::DocumentTitle($handles.slides,'Specific deck.pptx')){throw 'Legacy document title was not recognized.'}
-  if([PptDisplay]::DocumentTitle($handles.slides,'deck.pptx')){throw 'A substring incorrectly matched another document.'}
+  if([PptDisplay]::DocumentTitle($handles.slides,'deck.pptx') -or [PptDisplay]::DocumentTitle($handles.slides,'Specific.pptx')) {
+    throw 'A partial title incorrectly matched another presentation.'
+  }
+  $fresh = Select-SlideShowCandidate @([long]$slides.Handle,[long]$notes.Handle) @([long]$notes.Handle) ([pscustomobject]@{Left=-9999;Top=-9999;Width=1;Height=1})
+  if ($fresh -ne [long]$slides.Handle){throw 'A fresh document window was rejected because COM geometry disagreed.'}
+  $unknown = Select-SlideShowCandidate @([long]$slides.Handle,[long]$notes.Handle) @() ([pscustomobject]@{Left=-9999;Top=-9999;Width=1;Height=1})
+  if ($unknown -ne 0){throw 'Ambiguous Windows slideshow handles were accepted.'}
+  $native = @(Get-VerifiedNativeOutputs $handles $options)
+  if ($native.Count -ne 2 -or $native[0].role -ne 'slides' -or $native[1].role -ne 'notes'){throw 'Native output verification omitted a role.'}
+  [PptDisplay]::Move($handles.slides,100,150,300,160)
+  $moved = $false
+  try { Get-VerifiedNativeOutputs $handles $options | Out-Null } catch { $moved=$true }
+  if (-not $moved){throw 'A native output moved away from its assigned bounds and was still reported ready.'}
+  $screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+  $center = @{ x=$screen.X+[int]($screen.Width/2); y=$screen.Y+[int]($screen.Height/2) }
+  $nativeBounds = Get-NativeMonitorRectangle @{ x=-9000;y=-9000;width=1;height=1;monitorPoint=$center }
+  if ($nativeBounds.width -le 1 -or $nativeBounds.height -le 1) { throw 'Win32 must resolve native monitor bounds from the center point.' }
   $options.showPresenter=$false
   $single=Set-ProjectionWindows ([pscustomobject]@{HWND=$root}) ([pscustomobject]@{HWND=[long]$slides.Handle}) $options $root $before
   if($single.ContainsKey('notes')){throw 'Slides-only routing incorrectly requires Presenter View.'}

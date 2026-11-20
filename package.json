@@ -1,7 +1,7 @@
 {
   "name": "stage-deck",
   "productName": "StageDeck",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "description": "PowerPoint presentation desk for Stream Deck XL",
   "main": "src/main.cjs",
   "author": "StageDeck",

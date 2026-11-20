@@ -141,6 +141,46 @@ const { _electron:electron,expect }=require('@playwright/test');const assert=req
    await page.evaluate(()=>window.stage.command('unwatch'));
    fs.rmSync(watched,{recursive:true,force:true});
   }
+  if (process.platform === 'win32') {
+   // A normal Slides output uses PowerPoint's already positioned native window.
+   // Simulate the Office transport while using a real, visible HWND on the CI desktop.
+   await app.evaluate(async ({ app, BrowserWindow }) => {
+    const requireFromApp = process.getBuiltinModule('module').createRequire(app.getAppPath() + '/package.json');
+    const { PowerPoint } = requireFromApp('./src/powerpoint.cjs');
+    const execute = PowerPoint.prototype.execute;
+    let nativeWindow, slideshow, misplaced;
+    PowerPoint.prototype.execute = async function(operation,file,output,options) {
+      if (operation === 'start') {
+        if (!options.nativeOutput || !options.audience.monitorPoint) throw Error('Native Windows Slides routing was not selected.');
+        nativeWindow = new BrowserWindow({title:'Native slideshow fixture', show:true});
+        await nativeWindow.loadURL('data:text/html,<body style="background:navy">slide fixture</body>');
+        slideshow = {path:file,slide:1,total:3,state:'running'};
+        const handle = nativeWindow.getNativeWindowHandle().readBigUInt64LE().toString();
+        return {handles:{slides:handle},nativeOutputs:[{role:'slides',handle,bounds:options.audience}]};
+      }
+      if (operation === 'status' && slideshow) return {windows:[{...slideshow,...(misplaced?{outputError:'Native window moved'}:{})}]};
+      if (operation === 'stop' && nativeWindow) {
+        nativeWindow.destroy();
+        nativeWindow=null;
+        slideshow=null;
+        return {ok:true};
+      }
+      return execute.apply(this,arguments);
+    };
+    globalThis.moveWindowsSlideshowFixture = () => { misplaced=true; };
+   });
+   const slidesOnly = Object.fromEntries(displayIds.map((id,i)=>[id,i===0?'slides':'none']));
+   await page.evaluate(roles=>window.stage.command('display-roles',{roles}),slidesOnly);
+   const powerpointIndex = (await page.evaluate(()=>window.stage.getState())).current.slots.findIndex(slot=>slot?.kind==='pptx');
+   await page.locator(`[data-index="${powerpointIndex}"] .slot-trigger`).click();
+   await page.locator('#go').click();
+   await waitState(s=>s.live?.kind==='pptx'&&s.routing.nativeOutputs.length===1);
+   assert.equal((await app.windows()).filter(w=>w.url().includes('/mirror.html')).length,0);
+   await app.evaluate(()=>globalThis.moveWindowsSlideshowFixture());
+   await waitState(s=>!s.live&&s.lastError==='Native window moved');
+   assert.equal((await app.windows()).filter(w=>w.url().startsWith('data:text/html')).length,0);
+   await page.evaluate(()=>window.stage.command('dismiss-error'));
+  }
   // Actual canvas measurements: text-only N23 is larger than the thumbnail layout.
   const typography=await page.evaluate(async()=>{const {keyTextLayout}=await import('./keys.js');await document.fonts.ready;const c=document.createElement('canvas').getContext('2d');const slot={name:'Puni naziv prezentacije',keyLabel:'N23',keyFontSize:64,keyLayout:'title'};const title=keyTextLayout(c,slot);const preview=keyTextLayout(c,{...slot,keyLayout:'preview'});const multiline=keyTextLayout(c,{...slot,keyLabel:'GOVORNIK\n23'});return {title,preview,multiline};});
   assert.ok(typography.title.font>=50);assert.ok(typography.title.font>typography.preview.font);assert.equal(typography.title.clipped,false);assert.equal(typography.multiline.clipped,false);assert.ok(typography.multiline.lines.length>=2);

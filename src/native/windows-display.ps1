@@ -25,6 +25,17 @@ public class PptDisplay {
   static IOleMessageFilter currentFilter;
   public static int RegisterOfficeMessageFilter() { int initialized=OleInitialize(IntPtr.Zero); if(initialized<0)return initialized; currentFilter = new OfficeMessageFilter(); IOleMessageFilter oldFilter; return CoRegisterMessageFilter(currentFilter, out oldFilter); }
   [StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left, Top, Right, Bottom; }
+  [StructLayout(LayoutKind.Sequential)] public struct Point { public int X, Y; }
+  [StructLayout(LayoutKind.Sequential)] struct MonitorInfo { public int Size; public Rect Monitor, Work; public uint Flags; }
+  [DllImport("user32.dll")] static extern IntPtr MonitorFromPoint(Point point, uint flags);
+  [DllImport("user32.dll", EntryPoint="GetMonitorInfoW")] static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
+  public static Rect MonitorBounds(int x, int y) {
+    var handle = MonitorFromPoint(new Point { X=x, Y=y }, 0);
+    var info = new MonitorInfo { Size=Marshal.SizeOf(typeof(MonitorInfo)) };
+    if (handle==IntPtr.Zero || !GetMonitorInfo(handle,ref info))
+      throw new InvalidOperationException("Izabrani ekran više nije dostupan. Proveri režim Proširi (Win+P) i raspored u Ekranima.");
+    return info.Monitor;
+  }
   [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr h, out Rect rect);
   [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
   [DllImport("user32.dll")] static extern bool IsZoomed(IntPtr h);
@@ -58,12 +69,21 @@ public class PptDisplay {
     EnumWindows(delegate(IntPtr h,IntPtr p) { uint owner;GetWindowThreadProcessId(h,out owner);if(ids.Contains(owner)&&IsWindowVisible(h))result.Add(h.ToInt64());return true; },IntPtr.Zero);
     return result.ToArray();
   }
-  public static bool DocumentTitle(long h,string name) {
-    var title=Describe(h).Title;var stem=Path.GetFileNameWithoutExtension(name);var extension=Path.GetExtension(name);
-    return Regex.IsMatch(title,"(?:^|\\[)"+Regex.Escape(stem)+"(?:"+Regex.Escape(extension)+")?(?=[\\s\\[\\]]|$)",RegexOptions.IgnoreCase|RegexOptions.CultureInvariant);
+  public static bool DocumentTitle(long h, string name) {
+    var title=Describe(h).Title;
+    var stem=Path.GetFileNameWithoutExtension(name);
+    var extension=Path.GetExtension(name);
+    if (String.IsNullOrEmpty(stem)) return false;
+    var document=Regex.Escape(stem) + (String.IsNullOrEmpty(extension) ? "" : "(?:" + Regex.Escape(extension) + ")?");
+    const RegexOptions flags=RegexOptions.IgnoreCase|RegexOptions.CultureInvariant;
+    return Regex.IsMatch(title, "^"+document+@"(?=\s*(?:\[|[-–—]\s|$))", flags)
+      || Regex.IsMatch(title, @"\["+document+@"(?=\s*(?:\[|\]))", flags);
   }
   public static long[] DocumentRoots(string name) {
-    var result=new List<long>();foreach(long h in PowerPointWindows())if(Describe(h).ClassName=="PPTFrameClass"&&DocumentTitle(h,name))result.Add(h);return result.ToArray();
+    var result=new List<long>();
+    foreach(long h in PowerPointWindows())
+      if(Describe(h).ClassName=="PPTFrameClass" && DocumentTitle(h,name)) result.Add(h);
+    return result.ToArray();
   }
   public static bool ShowGeometry(long h,double x,double y,double width,double height) {
     var frame=Describe(h);uint dpi=96;try { dpi=GetDpiForWindow(new IntPtr(h)); }catch{}
@@ -81,8 +101,18 @@ public class PptDisplay {
     uint pid;GetWindowThreadProcessId(handle,out pid);
     return new PptWindowInfo { Handle=Handle(h),ClassName=cls.ToString(),Title=text.ToString(),X=rect.Left,Y=rect.Top,Width=rect.Right-rect.Left,Height=rect.Bottom-rect.Top,ProcessId=pid };
   }
+  [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr window, int attribute, out Rect rect, int size);
+  static bool SameBounds(Rect rect, int x, int y, int width, int height) {
+    return Math.Abs(rect.Left-x)<=2 && Math.Abs(rect.Top-y)<=2 &&
+      Math.Abs(rect.Right-(x+width))<=2 && Math.Abs(rect.Bottom-(y+height))<=2;
+  }
   public static bool Matches(long h,int x,int y,int width,int height) {
-    var frame=Describe(h);return Math.Abs(frame.X-x)<=2&&Math.Abs(frame.Y-y)<=2&&Math.Abs(frame.Width-width)<=2&&Math.Abs(frame.Height-height)<=2;
+    var handle = new IntPtr(Handle(h));
+    Rect rect;
+    if (GetWindowRect(handle, out rect) && SameBounds(rect,x,y,width,height)) return true;
+    try {
+      return DwmGetWindowAttribute(handle,9,out rect,Marshal.SizeOf(typeof(Rect))) == 0 && SameBounds(rect,x,y,width,height);
+    } catch { return false; }
   }
   public static void Move(long h,int x,int y,int width,int height) {
     if(!SetWindowPos(new IntPtr(Handle(h)),IntPtr.Zero,x,y,width,height,0x0010|0x0004|0x0020))throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),"PowerPoint prozor nije moguće postaviti na izabrani ekran.");
@@ -90,37 +120,83 @@ public class PptDisplay {
 }
 '@
 [PptDisplay]::DpiAware()
+function Get-NativeMonitorRectangle($bounds) {
+  if ($null -eq $bounds.monitorPoint) { return $bounds }
+  $point = $bounds.monitorPoint
+  $rect = [PptDisplay]::MonitorBounds($point.x, $point.y)
+  return @{
+    x=$rect.Left; y=$rect.Top
+    width=($rect.Right-$rect.Left); height=($rect.Bottom-$rect.Top)
+  }
+}
+
 function Get-DocumentRoot($application,$deck) {
-  $handle=[PptDisplay]::Handle([long]$application.HWND)
-  if($handle -ne 0){return $handle}
-  # Office 2010's public Application/DocumentWindow interfaces omit HWND.
-  # Bind to this document's editor, never an arbitrary PowerPoint process.
-  $deadline=[DateTime]::UtcNow.AddSeconds(5)
+  $name = [string]$deck.Name
+  $deadline = [DateTime]::UtcNow.AddSeconds(5)
   do {
-    $roots=@([PptDisplay]::DocumentRoots([string]$deck.Name))
-    if($roots.Count -eq 1){return $roots[0]}
+    $activeWindow = $null
+    try { $activeWindow = $application.ActiveWindow } catch { }
+    foreach ($owner in @($activeWindow, $application)) {
+      $handle = 0
+      try { $handle = [PptDisplay]::Handle([long]$owner.HWND) } catch { }
+      if ($handle -ne 0 -and [PptDisplay]::DocumentTitle($handle,$name)) { return $handle }
+    }
+    $roots = @([PptDisplay]::DocumentRoots($name))
+    if ($roots.Count -eq 1) { return $roots[0] }
     Start-Sleep -Milliseconds 100
-  } while([DateTime]::UtcNow -lt $deadline)
+  } while ([DateTime]::UtcNow -lt $deadline)
   throw 'PowerPoint editor izabrane prezentacije nije jednoznačno pronađen.'
 }
+
+function Select-SlideShowCandidate([long[]]$matches,[long[]]$before,$show) {
+  $fresh = @($matches | Where-Object {$before -notcontains $_})
+  if ($fresh.Count -eq 1) { return $fresh[0] }
+  if ($matches.Count -eq 1) { return $matches[0] }
+  if ($matches.Count -gt 1) {
+    # Office coordinates are only a tie-breaker. Origins may be virtualized
+    # differently from the window's size on displays with mixed scaling.
+    try {
+      $geometry = @($matches | Where-Object {
+        [PptDisplay]::ShowGeometry($_,$show.Left,$show.Top,$show.Width,$show.Height)
+      })
+      if ($geometry.Count -eq 1) { return $geometry[0] }
+    } catch { }
+  }
+  return 0
+}
+
 function Get-SlideShowHandle($show,[long]$rootHandle,[long[]]$before) {
-  $handle=[PptDisplay]::Handle([long]$show.HWND)
-  if($handle -ne 0){return $handle}
-  # SlideShowWindow.HWND is absent from Office 2010. Correlate the real
-  # process/document window with the COM show's geometry (points, not pixels).
-  $deadline=[DateTime]::UtcNow.AddSeconds(5)
+  $handle = 0
+  try { $handle = [PptDisplay]::Handle([long]$show.HWND) } catch { }
+  $name = [string]$show.Presentation.Name
+  $deadline = [DateTime]::UtcNow.AddSeconds(5)
   do {
-    $matches=@([PptDisplay]::Windows($rootHandle) | Where-Object {
+    $windows = @([PptDisplay]::Windows($rootHandle))
+    if ($handle -ne 0 -and $handle -ne $rootHandle -and $windows -contains $handle) { return $handle }
+    $matches = @($windows | Where-Object {
       $_ -ne $rootHandle -and [PptDisplay]::Describe($_).ClassName -eq 'screenClass' -and
-      [PptDisplay]::DocumentTitle($_,[string]$show.Presentation.Name) -and
-      [PptDisplay]::ShowGeometry($_,$show.Left,$show.Top,$show.Width,$show.Height)
+      [PptDisplay]::DocumentTitle($_,$name)
     })
-    $fresh=@($matches | Where-Object {$before -notcontains $_})
-    if($fresh.Count -eq 1){return $fresh[0]}
-    if($matches.Count -eq 1){return $matches[0]}
+    $selected = Select-SlideShowCandidate $matches $before $show
+    if ($selected -ne 0) { return $selected }
     Start-Sleep -Milliseconds 100
-  } while([DateTime]::UtcNow -lt $deadline)
+  } while ([DateTime]::UtcNow -lt $deadline)
   throw 'PowerPoint nije jednoznačno otvorio prozor sa slajdovima.'
+}
+
+function Get-VerifiedNativeOutputs($handles,$options) {
+  $results = @()
+  foreach ($role in @('slides','notes')) {
+    $handle = $handles[$role]
+    if ($null -eq $handle) { continue }
+    $bounds = if ($role -eq 'slides') { $options.audience } else { $options.control }
+    if (-not [PptDisplay]::Visible($handle) -or
+        -not [PptDisplay]::Matches($handle,$bounds.x,$bounds.y,$bounds.width,$bounds.height)) {
+      throw 'PowerPoint prozor je napustio dodeljeni ekran. Prikaz je zaustavljen.'
+    }
+    $results += @{role=$role;handle=$handle;bounds=$bounds}
+  }
+  return $results
 }
 function Set-ProjectionWindows($application,$show,$options,[long]$rootHandle=0,[long[]]$before=@()) {
   if ($null -eq $options.control -or $null -eq $options.audience) { throw 'Nedostaje raspored izlaznih ekrana.' }
@@ -134,11 +210,12 @@ function Set-ProjectionWindows($application,$show,$options,[long]$rootHandle=0,[
     do {
       $candidates=@([PptDisplay]::Windows($rootHandle) | Where-Object { $_ -ne $slides -and $_ -ne $rootHandle -and [PptDisplay]::IsPresenter($_) })
       $fresh=@($candidates | Where-Object { $before -notcontains $_ })
-      if($fresh.Count -eq 1){$presenter=$fresh[0]}
-      elseif($candidates.Count -eq 1){$presenter=$candidates[0]}
+      $matching = @($candidates | Where-Object { [PptDisplay]::DocumentTitle($_,[string]$show.Presentation.Name) })
+      if($matching.Count -eq 1){$presenter=$matching[0]}
+      elseif($fresh.Count -eq 1){$presenter=$fresh[0]}
       if($presenter -eq 0){Start-Sleep -Milliseconds 100}
     } while($presenter -eq 0 -and [DateTime]::UtcNow -lt $deadline)
-    if($presenter -eq 0){throw 'PowerPoint nije otvorio Presenter View. Proveri da Windows koristi Proširi (Win+P), a ne Dupliraj ekrane.'}
+    if($presenter -eq 0){throw 'PowerPoint nije otvorio Presenter View. Otvori Ekrane i izaberi Slajdovi za publiku i Samo kontrole na svom ekranu, ili proveri režim Proširi (Win+P).'}
     [PptDisplay]::Restore($presenter)
   }
   # Office can asynchronously reposition a full-screen window after Run returns.

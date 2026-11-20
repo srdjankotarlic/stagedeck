@@ -180,6 +180,11 @@
     "PowerPoint prozor je još otvoren. Zatvaranje nije završeno; ponovi isti taster.": "The PowerPoint window is still open. Press the same key to retry closing it.",
     "Sačuvaj postojeće izmene u PowerPointu pre pokretanja kroz StageDeck.": "Save your changes in PowerPoint before starting it from StageDeck.",
     "Prezentacija ima nesačuvane izmene. Sačuvaj je u PowerPointu pre zatvaranja.": "The presentation has unsaved changes. Save it in PowerPoint before closing.",
+    "PowerPoint nije potvrdio izlaz za slajdove.": "PowerPoint did not confirm the slide output.",
+    "PowerPoint prozor je napustio dodeljeni ekran. Prikaz je zaustavljen.": "A PowerPoint window left its assigned display. The show was stopped.",
+    "PowerPoint nije otvorio Presenter View. Otvori Ekrane i izaberi Slajdovi za publiku i Samo kontrole na svom ekranu, ili proveri režim Proširi (Win+P).": "PowerPoint did not open Presenter View. In Displays, select Slides for the audience and Controls only for your screen, or check Extend mode (Win+P).",
+    "Izabrani ekran više nije dostupan. Proveri režim Proširi (Win+P) i raspored u Ekranima.": "The selected display is no longer available. Check Extend mode (Win+P) and the setup in Displays.",
+    "PowerPoint je otvorio fajl u zaštićenom prikazu. Proveri fajl u desktop PowerPointu, zatim ponovi GO.": "PowerPoint opened the file in Protected View. Review it in desktop PowerPoint, then press GO again.",
     "PowerPoint nije otvorio izabrani fajl.": "PowerPoint did not open the selected file.",
     "PowerPoint prozor nije spreman. Ponovi GO.": "The PowerPoint window is not ready. Press GO again.",
     "PowerPoint nije otvorio podešavanje projekcije. Ponovi GO.": "PowerPoint did not open slide show settings. Press GO again."

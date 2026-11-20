@@ -6,3 +6,15 @@ function Close-EmptyPowerPoint($application) {
   $application.Quit()
   return $true
 }
+
+function Test-ProtectedPresentation($application, [string]$path) {
+  try {
+    for ($index=1; $index -le $application.ProtectedViewWindows.Count; $index++) {
+      $protected = $application.ProtectedViewWindows.Item($index)
+      if ((Join-Path $protected.SourcePath $protected.SourceName) -eq $path) { return $true }
+    }
+  } catch {
+    # Preserve the original Open error if this Office version omits the properties.
+  }
+  return $false
+}

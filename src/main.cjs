@@ -47,9 +47,25 @@ function displayPlan() {
   return {control:notes||plan.control,audience:slides||notes||plan.control,separate:!!notes&&!!slides,audienceIndex:displays.indexOf(slides||notes||plan.control)+1};
 }
 function routingOptions() {
-  const plan=displayPlan();
-  const rect=display=>process.platform==='win32'?screen.dipToScreenRect(null,display.bounds):display.bounds;
-  return {control:rect(plan.control),audience:rect(plan.audience),audienceIndex:plan.audienceIndex,separate:plan.separate,showPresenter:outputPlan().notes.length>0,hideSlides:outputPlan().slides.length===0};
+  const plan = displayPlan();
+  const rect = display => {
+    if (process.platform !== 'win32') return display.bounds;
+    const {x, y, width, height} = display.bounds;
+    // Resolve the real monitor from a point strictly inside it. Windows then
+    // supplies the entire native rectangle, including mixed-DPI origins.
+    return {
+      ...screen.dipToScreenRect(null, display.bounds),
+      monitorPoint: screen.dipToScreenPoint({x: x + Math.floor(width / 2), y: y + Math.floor(height / 2)})
+    };
+  };
+  const roles = outputPlan();
+  const audience = rect(plan.audience);
+  const control = process.platform === 'win32' && !roles.notes.length ? audience : rect(plan.control);
+  return {
+    control, audience, audienceIndex: plan.audienceIndex, separate: plan.separate,
+    showPresenter: roles.notes.length > 0, hideSlides: roles.slides.length === 0,
+    nativeOutput: process.platform === 'win32' && roles.slides.length === 1 && roles.notes.length <= 1
+  };
 }
 const displayRecovery = () => path.join(app.getPath('userData'), 'displays-recovery.json');
 async function macDisplays(operation, controlId) {
@@ -70,7 +86,6 @@ async function prepareProjection(){
    options.multipleDisplays = screen.getAllDisplays().length > 1;
    options.showPresenter = options.multipleDisplays || roles.notes.length > 0;
  }
- else if(!roles.notes.length)options.control=screen.dipToScreenRect(null,roles.slidesRoot.bounds);
  return options;
 }
 async function coverNativeSources(file){
@@ -97,7 +112,7 @@ async function restoreProjection(){
 function state() {
   return {
     name: 'StageDeck', version: app.getVersion(), platform: process.platform, theme: library.theme || 'dark', language: language(),
-    routing: { controlId: appControlId(), notesIds:outputPlan().notes.map(d=>d.id), slidesIds:outputPlan().slides.map(d=>d.id), audienceId:displayPlan().audience.id, separate:displayPlan().separate, roles:outputPlan().assignments, missing:outputPlan().missing, custom:!!library.displayRoles, mirrors:mirrors?.snapshot()||[], captureAllowed:process.platform!=='darwin'||systemPreferences.getMediaAccessStatus('screen')==='granted' },
+    routing: { controlId: appControlId(), notesIds:outputPlan().notes.map(d=>d.id), slidesIds:outputPlan().slides.map(d=>d.id), audienceId:displayPlan().audience.id, separate:displayPlan().separate, roles:outputPlan().assignments, missing:outputPlan().missing, custom:!!library.displayRoles, mirrors:mirrors?.snapshot()||[], nativeOutputs:projectionPlan?.nativeOutputs||[], captureAllowed:process.platform!=='darwin'||systemPreferences.getMediaAccessStatus('screen')==='granted' },
     firstRun: !library.setupSeen,
     events: library.events.map(e => ({ id: e.id, name: e.name })),
     current: { ...event(), slots: event().slots.map(s => s ? { ...s, missing: !fs.existsSync(s.path), error: presentMessage(errors.get(s.id) || '') } : null) },
@@ -218,12 +233,18 @@ async function pollPpt() {
   if (busy || polling || !managedPresentation) return;
   polling = true;
   try {
+    const current = managedPresentation;
     const result = await ppt.execute('status');
-    if (busy) return;
+    if (busy || current !== managedPresentation) return;
     pptError = '';
     if (live?.kind === 'pdf') return;
     const windows = result.windows || [];
     const match=windows.find(w=>samePath(w.path,managedPresentation));
+    if (match?.outputError) {
+      lastError = match.outputError;
+      await command('stop');
+      return;
+    }
     if (match) {
       const slot = event().slots.find(s => s && samePath(s.path, match.path));
       live = { id: slot.id, path: slot.path, kind: slot.kind, name: slot.name, slide: match.slide, total: match.total, state: match.state };
@@ -266,11 +287,19 @@ async function toggle(index) {
         while(Date.now()<deadline){const layout=await ppt.execute('layout',slot.path);if((!wanted.notes.length||layout.windows.some(w=>w.role==='notes'))&&(!wanted.slides.length||layout.windows.some(w=>w.role==='slides'))){ready=true;break;}await new Promise(resolve=>setTimeout(resolve,200));}
         if(!ready)throw Error('PowerPoint prikaz još nije spreman. Proveri dijaloge u PowerPointu pa ponovi GO.');
       }
-      await mirrors.start(slot.path,{...outputPlan(),mirrorAll:true,language:language()},started.handles||{});
+      if (options.nativeOutput) {
+        projectionPlan.nativeOutputs = started.nativeOutputs;
+        if (!projectionPlan.nativeOutputs?.some(output => output.role === 'slides')) {
+          throw Error('PowerPoint nije potvrdio izlaz za slajdove.');
+        }
+      } else {
+        await mirrors.start(slot.path,{...outputPlan(),mirrorAll:true,language:language()},started.handles||{});
+      }
       if(process.platform==='darwin')await coverNativeSources(slot.path);
       const result = await ppt.execute('status');
       const match = (result.windows || []).find(w => samePath(w.path, slot.path));
       if (!match) throw Error('Slideshow nije pokrenut. Proveri da li PowerPoint čeka potvrdu ili dozvolu.');
+      if (match.outputError) throw Error(match.outputError);
       if(screenChangePending)throw Error('Ekran je odvojen tokom pokretanja. Proveri raspored pa ponovi.');
       managedPresentation = slot.path;
       live = { id: slot.id, path: slot.path, name: slot.name, kind: slot.kind, slide: match.slide, total: match.total, state: match.state };

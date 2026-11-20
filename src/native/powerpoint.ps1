@@ -39,7 +39,14 @@ while ($null -ne ($line = [Console]::ReadLine())) {
         } else {
           for ($i = 1; $i -le $ppt.SlideShowWindows.Count; $i++) {
             $w = $ppt.SlideShowWindows.Item($i)
-            $windows += @{ path = $w.Presentation.FullName; slide = $w.View.CurrentShowPosition; total = $w.Presentation.Slides.Count; state = [string]$w.View.State }
+            $file = $w.Presentation.FullName
+            $window = @{ path=$file; slide=$w.View.CurrentShowPosition; total=$w.Presentation.Slides.Count; state=[string]$w.View.State }
+            $session = $sessions[$file]
+            if ($null -ne $session -and $session.nativeOutput) {
+              try { Get-VerifiedNativeOutputs $session.handles $session.options | Out-Null }
+              catch { $window.outputError = $_.Exception.Message }
+            }
+            $windows += $window
           }
           $result = @{ running = $true; windows = $windows; documentCount = $ppt.Presentations.Count; protectedDocumentCount = $ppt.ProtectedViewWindows.Count; officeVersion = [string]$ppt.Version }
         }
@@ -59,7 +66,21 @@ while ($null -ne ($line = [Console]::ReadLine())) {
         }
         if ($null -eq $deck) {
           $withWindow = if ($req.operation -eq 'thumbnail') { 0 } else { -1 }
-          $deck = $ppt.Presentations.Open($req.path, -1, 0, $withWindow)
+          try {
+            $deck = $ppt.Presentations.Open($req.path, -1, 0, $withWindow)
+          } catch {
+            $openError = $_
+            if (Test-ProtectedPresentation $ppt $req.path) {
+              throw 'PowerPoint je otvorio fajl u zaštićenom prikazu. Proveri fajl u desktop PowerPointu, zatim ponovi GO.'
+            }
+            throw $openError
+          }
+          if ($null -eq $deck) {
+            if (Test-ProtectedPresentation $ppt $req.path) {
+              throw 'PowerPoint je otvorio fajl u zaštićenom prikazu. Proveri fajl u desktop PowerPointu, zatim ponovi GO.'
+            }
+            throw 'PowerPoint nije otvorio izabrani fajl.'
+          }
           $openedForPreview = $req.operation -eq 'thumbnail'
         }
         if($req.operation -eq 'start' -and $deck.Saved -eq 0){throw 'Sačuvaj postojeće izmene u PowerPointu pre pokretanja kroz StageDeck.'}
@@ -79,6 +100,14 @@ while ($null -ne ($line = [Console]::ReadLine())) {
             }
           }
         } else {
+          $stage='resolve-displays'
+          $req.options.audience = Get-NativeMonitorRectangle $req.options.audience
+          $req.options.control = Get-NativeMonitorRectangle $req.options.control
+          if ($req.options.separate -and
+              $req.options.audience.x -eq $req.options.control.x -and
+              $req.options.audience.y -eq $req.options.control.y) {
+            throw 'Izabrani ekran više nije dostupan. Proveri režim Proširi (Win+P) i raspored u Ekranima.'
+          }
           $stage='prepare-presenter'
           $ppt.Visible = -1
           if($deck.Windows.Count -gt 0){$deck.Windows.Item(1).Activate()}
@@ -103,6 +132,13 @@ while ($null -ne ($line = [Console]::ReadLine())) {
           $handles=Set-ProjectionWindows $ppt $show $req.options $rootHandle $before
           $sessions[$req.path].outputs=@($handles.Values)
           $result=@{ok=$true;handles=$handles;editorHandle=$rootHandle}
+          if ($req.options.nativeOutput) {
+            $stage='verify-native-output'
+            $result.nativeOutputs=@(Get-VerifiedNativeOutputs $handles $req.options)
+            $sessions[$req.path].nativeOutput=$true
+            $sessions[$req.path].handles=$handles
+            $sessions[$req.path].options=$req.options
+          }
         }
       } else {
         $stage=$req.operation
