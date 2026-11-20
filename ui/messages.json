@@ -154,6 +154,8 @@
     "StageDeck prečica je na radnoj površini.": "The StageDeck shortcut is on your desktop.",
     "Stream Deck veza nije dostupna:": "The Stream Deck connection is unavailable:",
     "PDF nije pronađen.": "PDF not found.",
+    "PDF nije poslao sliku na vreme.": "The PDF did not render in time.",
+    "PDF prozor je zatvoren pre prikaza.": "The PDF window closed before its first page was rendered.",
     "PDF nije moguće prikazati:": "Could not display the PDF:",
     "Ekran je odvojen. Prikaz je zaustavljen; proveri raspored pre ponovnog pokretanja.": "A display was disconnected. Output stopped; check the layout before starting again.",
     "Neispravan raspored ekrana.": "Invalid display layout.",

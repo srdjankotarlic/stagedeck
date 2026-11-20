@@ -111,6 +111,36 @@ const { _electron:electron,expect }=require('@playwright/test');const assert=req
   await page.locator('[data-index="7"] .slot-trigger').click();await page.evaluate(()=>window.stage.command('move',{from:7,to:6}));
   await expect(page.locator('[data-index="6"]')).toHaveClass(/selected/);
   await page.evaluate(()=>window.stage.command('remove',{index:6}));await expect(page.locator('#cue-panel')).toBeHidden();
+  // A broken PDF must fail the GO command and never be marked live.
+  const watched = fs.mkdtempSync(path.join(data, 'watched-'));
+  const watchedPdf = path.join(watched, 'Agenda.pdf');
+  try {
+   fs.writeFileSync(watchedPdf, 'not a PDF');
+   await app.evaluate(({dialog}, folder) => {
+    dialog.showOpenDialog = async () => ({canceled:false,filePaths:[folder]});
+   }, watched);
+   await page.locator('#watch-folder').click();
+   await waitState(s=>s.current.folder===watched&&s.current.slots.some(slot=>slot?.path===watchedPdf));
+   const index=(await page.evaluate(()=>window.stage.getState())).current.slots.findIndex(slot=>slot?.path===watchedPdf);
+   const result=await page.evaluate(index=>window.stage.command('toggle',{index}),index);
+   assert.equal(result.ok,false);
+   assert.match(result.error,/Could not display the PDF/i);
+   assert.equal((await page.evaluate(()=>window.stage.getState())).live,null);
+   assert.equal((await app.windows()).filter(w=>w.url().includes('/pdf.html')).length,0);
+   fs.copyFileSync(files[3],watchedPdf);
+   fs.utimesSync(watchedPdf,new Date(),new Date(Date.now()+3000));
+   await waitState(s=>!!s.current.slots[index]?.thumbnail);
+   await page.locator(`[data-index="${index}"] .slot-trigger`).click();
+   await page.locator('#go').click();
+   await waitState(s=>s.live?.total===3&&!s.busy);
+   fs.unlinkSync(watchedPdf);
+   const closed=await page.evaluate(index=>window.stage.command('toggle',{index}),index);
+   assert.equal(closed.ok,true,'a live PDF can close after removal of its source file');
+   assert.equal((await page.evaluate(()=>window.stage.getState())).live,null);
+  } finally {
+   await page.evaluate(()=>window.stage.command('unwatch'));
+   fs.rmSync(watched,{recursive:true,force:true});
+  }
   // Actual canvas measurements: text-only N23 is larger than the thumbnail layout.
   const typography=await page.evaluate(async()=>{const {keyTextLayout}=await import('./keys.js');await document.fonts.ready;const c=document.createElement('canvas').getContext('2d');const slot={name:'Puni naziv prezentacije',keyLabel:'N23',keyFontSize:64,keyLayout:'title'};const title=keyTextLayout(c,slot);const preview=keyTextLayout(c,{...slot,keyLayout:'preview'});const multiline=keyTextLayout(c,{...slot,keyLabel:'GOVORNIK\n23'});return {title,preview,multiline};});
   assert.ok(typography.title.font>=50);assert.ok(typography.title.font>typography.preview.font);assert.equal(typography.title.clipped,false);assert.equal(typography.multiline.clipped,false);assert.ok(typography.multiline.lines.length>=2);

@@ -22,8 +22,10 @@ const presentMessage = value => localMessage(language(), value);
 app.setName('StageDeck');
 app.setPath('userData', process.env.STAGEDECK_TEST_DATA || path.join(app.getPath('appData'), 'StageDeck'));
 if (!app.requestSingleInstanceLock()) app.quit();
-let mainWindow, pdfWindow, library, libraryFile, server, wss, watching = false, mirrors;
-const pdfWindows=new Set(),identificationWindows=new Set(),outputGuards=new Map();
+let mainWindow, library, libraryFile, server, wss, watching = false, mirrors;
+const pdfWindows = new Set();
+const pendingPdfFrames = new Map();
+const identificationWindows=new Set(),outputGuards=new Map();
 let live = null, busy = false, polling = false, loading = null, lastError = '', pptError = '', lastWatch = 0;
 const errors = new Map(), ppt = new PowerPoint(), devices = new Map();
 let keyImages = [];
@@ -64,7 +66,10 @@ async function prepareProjection(){
  projectionPlan={labels:Object.fromEntries(screen.getAllDisplays().map(d=>[d.id,d.label])),assignments:{...roles.assignments},appControlId:roles.control.id,notesId:roles.notesRoot?.id,slidesId:roles.slidesRoot?.id};
  await guardOutputs();
  const options=routingOptions();
- if(process.platform==='darwin')options.showPresenter=true;
+ if(process.platform==='darwin'){
+   options.multipleDisplays = screen.getAllDisplays().length > 1;
+   options.showPresenter = options.multipleDisplays || roles.notes.length > 0;
+ }
  else if(!roles.notes.length)options.control=screen.dipToScreenRect(null,roles.slidesRoot.bounds);
  return options;
 }
@@ -158,12 +163,50 @@ async function addFiles(paths, index) {
   for (const slot of added) { await thumbnail(slot); persist(); publish(); }
   return { ok: true, count: added.length, skipped };
 }
+function closePdfOutputs() {
+  const windows = [...pdfWindows];
+  pdfWindows.clear();
+  for (const win of windows) if (!win.isDestroyed()) win.destroy();
+}
+
+async function openPdfOutput(display, slot) {
+  const win = new BrowserWindow({
+    ...display.bounds, fullscreen: true, show: false, backgroundColor: '#000000',
+    autoHideMenuBar: true, title: slot.name,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true,
+      nodeIntegration: false, sandbox: true
+    }
+  });
+  pdfWindows.add(win);
+  const sender = win.webContents;
+  const ready = new Promise((resolve, reject) => {
+    pendingPdfFrames.set(sender, { resolve, reject });
+  });
+  const timeout = setTimeout(() => {
+    pendingPdfFrames.get(sender)?.reject(Error('PDF nije poslao sliku na vreme.'));
+  }, 20000);
+  win.on('closed', () => {
+    pendingPdfFrames.get(sender)?.reject(Error('PDF prozor je zatvoren pre prikaza.'));
+    if (pdfWindows.delete(win) && live?.id === slot.id) command('stop');
+  });
+  try {
+    const [, firstPage] = await Promise.all([
+      win.loadFile(path.join(__dirname, '../ui/pdf.html'), {query: {id: slot.id, language: language()}}),
+      ready
+    ]);
+    return firstPage;
+  } finally {
+    clearTimeout(timeout);
+    pendingPdfFrames.delete(sender);
+  }
+}
+
 async function stopLive({keepGuards=false}={}) {
   const current=live||(managedPresentation?{kind:'pptx',path:managedPresentation}:null);
   if(current&&current.kind!=='pdf')await guardOutputs();
   mirrors?.stop();
-  const windows=[...pdfWindows];pdfWindows.clear();pdfWindow=null;
-  for(const win of windows)if(!win.isDestroyed())win.destroy();
+  closePdfOutputs();
   if(current&&current.kind!=='pdf')await ppt.execute('stop',current.path);
   managedPresentation=null;
   await restoreProjection();
@@ -196,28 +239,27 @@ async function toggle(index) {
   if (!Number.isInteger(index) || index < 0 || index > 31) throw Error('Nepostojeći taster.');
   if (busy) return { ok: false, error: 'Sačekaj da se prethodna komanda završi.' };
   const slot = event().slots[index]; if (!slot) return { ok: true };
-  if (!fs.existsSync(slot.path)) throw Error('Fajl nije pronađen. Ponovo poveži ili zameni prezentaciju.');
+  if (live?.id !== slot.id && !fs.existsSync(slot.path)) throw Error('Fajl nije pronađen. Ponovo poveži ili zameni prezentaciju.');
   busy = true; screenChangePending=false; loading = slot.id; lastError = ''; errors.delete(slot.id); publish();
   const closingCurrent=live?.id===slot.id;
+  let previousClosed = false;
+  let powerpointStarted = false;
   try {
-    if (live?.id === slot.id) { await stopLive(); return { ok: true }; }
+    if (closingCurrent) { await stopLive(); return { ok: true }; }
     await stopLive({keepGuards:true});
+    previousClosed = true;
     if (slot.kind === 'pdf') {
       const plan=outputPlan();
       if(plan.missing.length)throw Error('Dodeljeni ekran nije priključen. Proveri Ekrane.');
       if(!plan.slides.length)throw Error('Za PDF izaberi bar jedan Slajdovi ekran.');
       projectionPlan={labels:Object.fromEntries(screen.getAllDisplays().map(d=>[d.id,d.label])),assignments:{...plan.assignments},appControlId:plan.control.id};
-      live={id:slot.id,path:slot.path,name:slot.name,kind:'pdf',slide:1,total:slot.slides};
-      const loaded=[];
-      for(const display of plan.slides){
-        const win=new BrowserWindow({...display.bounds,fullscreen:true,backgroundColor:'#000000',autoHideMenuBar:true,title:slot.name,webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
-        pdfWindows.add(win);pdfWindow ||= win;
-        win.on('closed',()=>{if(pdfWindows.delete(win)&&live?.id===slot.id)command('stop');});
-        loaded.push(win.loadFile(path.join(__dirname,'../ui/pdf.html'),{query:{id:slot.id,language:language()}}));
-      }
-      await Promise.all(loaded);
+      const [firstPage] = await Promise.all(plan.slides.map(display => openPdfOutput(display, slot)));
+      if (screenChangePending) throw Error('Ekran je odvojen tokom pokretanja. Proveri raspored pa ponovi.');
+      live = {id: slot.id, path: slot.path, name: slot.name, kind: 'pdf', ...firstPage};
+      for (const win of pdfWindows) win.show();
     } else {
       const options=await prepareProjection();
+      powerpointStarted = true;
       const started=await ppt.execute('start',slot.path,'',options);
       if(process.platform==='darwin'){
         const wanted=outputPlan(),deadline=Date.now()+15000;let ready=false;
@@ -238,10 +280,11 @@ async function toggle(index) {
     return { ok: true };
   } catch (error) {
     // A failed close must stay red and retryable until Office confirms closure.
-    if(closingCurrent)return fail(error,slot);
+    if (!previousClosed) return fail(error, slot);
     mirrors?.stop();
-    for(const win of pdfWindows)if(!win.isDestroyed())win.destroy();pdfWindows.clear();pdfWindow=null;live=null;
-    if(slot.kind!=='pdf')await ppt.execute('stop',slot.path).catch(()=>{});
+    closePdfOutputs();
+    live = null;
+    if (powerpointStarted) await ppt.execute('stop', slot.path).catch(()=>{});
     await restoreProjection().catch(()=>{});
     clearGuards();
     return fail(error, slot);
@@ -497,15 +540,30 @@ app.whenReady().then(async () => {
   ipcMain.handle('state', () => state());
   ipcMain.handle('command', async (_, name, payload) => localResult(language(), await command(name,payload)));
   ipcMain.handle('pdf:read', async (_, id) => { const slot = findSlot(id); if (!slot || slot.kind !== 'pdf') throw Error(presentMessage('PDF nije pronađen.')); return fs.promises.readFile(slot.path); });
-  ipcMain.handle('pdf:thumbnail', (_, id, data, total) => {
+  ipcMain.handle('pdf:thumbnail', (_, id, modified, data, total) => {
     const slot = findSlot(id);
-    if (slot?.kind === 'pdf' && typeof data === 'string' && data.startsWith('data:image/png;base64,') && data.length < 1500000 && Number.isInteger(total) && total > 0) { slot.thumbnail = data; slot.slides = total; if (live?.id === slot.id) live.total = total; persist(); publish(); }
+    if (slot?.kind === 'pdf' && slot.modified === modified && typeof data === 'string' && data.startsWith('data:image/png;base64,') && data.length < 1500000 && Number.isInteger(total) && total > 0) { slot.thumbnail = data; slot.slides = total; if (live?.id === slot.id) live.total = total; persist(); publish(); }
   });
-  ipcMain.on('pdf:position', (e, page) => { if ([...pdfWindows].some(w=>w.webContents===e.sender) && live?.kind === 'pdf' && Number.isInteger(page) && page > 0) { live.slide = page; publish(); } });
-  ipcMain.on('pdf:failed', (e, message) => {
-    if(![...pdfWindows].some(w=>w.webContents===e.sender)||live?.kind!=='pdf')return;
-    const slot=findSlot(live.id);for(const win of pdfWindows)if(!win.isDestroyed())win.destroy();pdfWindows.clear();pdfWindow=null;live=null;
-    fail(Error('PDF nije moguće prikazati: ' + String(message).slice(0,300)), slot);
+  ipcMain.on('pdf:position', (event, page, total) => {
+    if (!Number.isInteger(page) || page < 1 || !Number.isInteger(total) || total < page) return;
+    const pending = pendingPdfFrames.get(event.sender);
+    if (pending) {
+      pending.resolve({slide: page, total});
+    } else if (live?.kind === 'pdf' && [...pdfWindows].some(w => w.webContents === event.sender)) {
+      live.slide = page;
+      publish();
+    }
+  });
+  ipcMain.on('pdf:failed', (event, message) => {
+    const error = Error('PDF nije moguće prikazati: ' + String(message).slice(0, 300));
+    const pending = pendingPdfFrames.get(event.sender);
+    if (pending) {
+      pending.reject(error);
+      return;
+    }
+    if (live?.kind !== 'pdf' || ![...pdfWindows].some(w => w.webContents === event.sender)) return;
+    const slot = findSlot(live.id);
+    command('stop').then(() => fail(error, slot));
   });
   refreshMenu();
   if (process.platform==='darwin' && fs.existsSync(displayRecovery())) await macDisplays('restore');
@@ -529,5 +587,5 @@ app.on('second-instance', () => { mainWindow?.show(); mainWindow?.focus(); });
 app.on('activate', () => { if (!mainWindow || mainWindow.isDestroyed()) createMainWindow(); else mainWindow.show(); });
 app.on('before-quit', e => {
   if(!app.isQuitting&&(busy||live||fs.existsSync(displayRecovery()))){e.preventDefault();app.isQuitting=true;(async()=>{while(busy)await new Promise(resolve=>setTimeout(resolve,50));await stopLive();if(process.platform==='darwin'&&fs.existsSync(displayRecovery()))await macDisplays('restore');})().catch(()=>{}).finally(()=>app.quit());return;}
-  app.isQuitting = true; globalShortcut.unregisterAll();clearGuards();mirrors?.stop();for(const w of pdfWindows)if(!w.isDestroyed())w.destroy();ppt.dispose(); pdfWindow?.destroy(); wss?.close(); server?.close(); });
+  app.isQuitting = true; globalShortcut.unregisterAll();clearGuards();mirrors?.stop();closePdfOutputs();ppt.dispose(); wss?.close(); server?.close(); });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin' && !live) app.quit(); });

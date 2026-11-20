@@ -96,7 +96,9 @@ on run argv
       if operation is "prepare" then
         set wasSaved to saved of targetPresentation
         set show type of slide show settings of targetPresentation to slide show type speaker
-        set show with presenter of slide show settings of targetPresentation to ((count of argv) < 3 or (item 3 of argv) is not "false")
+        if (count of argv) < 4 or (item 4 of argv) is not "single" then
+          set show with presenter of slide show settings of targetPresentation to ((count of argv) < 3 or (item 3 of argv) is not "false")
+        end if
         if wasSaved then set saved of targetPresentation to true
       else
         run slide show slide show settings of presentation targetName

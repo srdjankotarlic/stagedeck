@@ -162,19 +162,23 @@ document.addEventListener('keydown',e=>{
   if(document.querySelector('dialog[open]')||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;
   if(e.key==='ArrowRight'){e.preventDefault();command('next');}if(e.key==='ArrowLeft'){e.preventDefault();command('previous');}if(e.key==='Escape'){if(state.live)command('stop');else if(selected){selected=null;render(state);}}
 });
-const pdfQueue=new Set(); let pdfWorker;
+const pdfPreviewAttempts = new Map();
+let pdfWorker;
 async function renderPdfThumbnails(s){
-  for(const slot of s.current.slots.filter(x=>x?.kind==='pdf'&&!x.thumbnail&&!x.missing&&!pdfQueue.has(x.id))){
-    pdfQueue.add(slot.id);
+  for(const slot of s.current.slots.filter(x=>x?.kind==='pdf'&&!x.thumbnail&&!x.missing&&pdfPreviewAttempts.get(x.id) !== x.modified)){
+    pdfPreviewAttempts.set(slot.id, slot.modified);
+    let task;
     try{
       pdfWorker ||= await import('../node_modules/pdfjs-dist/build/pdf.mjs');
       pdfWorker.GlobalWorkerOptions.workerSrc=new URL('../node_modules/pdfjs-dist/build/pdf.worker.mjs',location.href).href;
-      const doc=await pdfWorker.getDocument({data:new Uint8Array(await window.stage.readPdf(slot.id)),isEvalSupported:false}).promise;
+      task=pdfWorker.getDocument({data:new Uint8Array(await window.stage.readPdf(slot.id)),isEvalSupported:false});
+      const doc=await task.promise;
       const page=await doc.getPage(1),raw=page.getViewport({scale:1}),viewport=page.getViewport({scale:480/raw.width});
       const canvas=document.createElement('canvas');canvas.width=viewport.width;canvas.height=viewport.height;
       await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;
-      await window.stage.pdfRendered(slot.id,canvas.toDataURL('image/png'),doc.numPages);await doc.destroy();
+      await window.stage.pdfRendered(slot.id,slot.modified,canvas.toDataURL('image/png'),doc.numPages);
     }catch(error){console.warn('PDF preview:',error.message);}
+    finally { await task?.destroy().catch(() => {}); }
   }
 }
 window.stage.onState(render);render(await window.stage.getState());
